@@ -95,6 +95,7 @@ export const assets = {
   product_details_page_apple_earphone_image3,
   product_details_page_apple_earphone_image4,
   product_details_page_apple_earphone_image5,
+  pp_image: "/assets/PP1.jpeg",
   checkmark
 };
 
