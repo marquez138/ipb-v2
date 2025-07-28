@@ -56,7 +56,7 @@ const AddProduct = () => {
         setPrice('')
         setOfferPrice('')
         // setColor('Black')
-        SelectedColors([])
+        setSelectedColors([])
       } else {
         toast.error(data.message)
       }
