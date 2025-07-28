@@ -29,7 +29,8 @@ export async function POST(request) {
     const category = formData.get('category')
     const price = formData.get('price')
     const offerPrice = formData.get('offerPrice')
-    const color = formData.get('color')
+    // const color = formData.get('color')
+    const colors = formData.getAll('colors') // Array of strings
 
     const files = formData.getAll('images')
 
@@ -37,8 +38,15 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'no files uploaded' })
     }
 
-    if (!color) {
-      return NextResponse.json({ success: false, message: 'Color is required' })
+    // if (!color) {
+    //   return NextResponse.json({ success: false, message: 'Color is required' })
+    // }
+
+    if (!colors || colors.length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'At least one color is required',
+      })
     }
 
     const result = await Promise.all(
@@ -73,7 +81,8 @@ export async function POST(request) {
       price: Number(price),
       offerPrice: Number(offerPrice),
       image,
-      color, // new field
+      //   color, // new field
+      colors, // array of color names
       date: Date.now(),
     })
 

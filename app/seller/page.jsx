@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useAppContext } from '@/context/AppContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import ColorSwatchSelect from '@/components/ColorSwatchSelect'
 
 const AddProduct = () => {
   const { getToken } = useAppContext()
@@ -15,7 +16,9 @@ const AddProduct = () => {
   const [category, setCategory] = useState('Earphone')
   const [price, setPrice] = useState('')
   const [offerPrice, setOfferPrice] = useState('')
-  const [color, setColor] = useState('Black')
+  // const [color, setColor] = useState('Black')
+
+  const [selectedColors, setSelectedColors] = useState([])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,10 +30,14 @@ const AddProduct = () => {
     formData.append('category', category)
     formData.append('price', price)
     formData.append('offerPrice', offerPrice)
-    formData.append('color', color)
+    // formData.append('color', color)
 
     for (let i = 0; i < files.length; i++) {
       formData.append('images', files[i])
+    }
+
+    for (let i = 0; i < selectedColors.length; i++) {
+      formData.append('colors', selectedColors[i]) // ✅ consistent with backend
     }
 
     try {
@@ -48,7 +55,8 @@ const AddProduct = () => {
         setCategory('Earphone')
         setPrice('')
         setOfferPrice('')
-        setColor('Black')
+        // setColor('Black')
+        SelectedColors([])
       } else {
         toast.error(data.message)
       }
@@ -175,7 +183,7 @@ const AddProduct = () => {
             <label className='text-base font-medium' htmlFor='color'>
               Color
             </label>
-            <select
+            {/* <select
               id='color'
               className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
               onChange={(e) => setColor(e.target.value)}
@@ -187,7 +195,16 @@ const AddProduct = () => {
               <option value='Red'>Red</option>
               <option value='Blue'>Blue</option>
               <option value='Green'>Green</option>
-            </select>
+            </select> */}
+
+            <ColorSwatchSelect
+              selectedColors={selectedColors}
+              setSelectedColors={setSelectedColors}
+            />
+
+            {selectedColors.map((color, index) => (
+              <input key={index} type='hidden' name='colors' value={color} />
+            ))}
           </div>
         </div>
 
