@@ -59,7 +59,7 @@ export const AppContextProvider = (props) => {
       toast.error(error.message)
     }
   }
-
+  //OG
   // const addToCart = async (itemId) => {
   //   if (!user) {
   //     return toast('Please login', {
@@ -89,19 +89,46 @@ export const AppContextProvider = (props) => {
   //   }
   // }
 
-  const addToCart = async (itemId, color = '') => {
+  // const addToCart = async (itemId, color = '') => {
+  //   if (!user) {
+  //     return toast('Please login', { icon: '⚠️' })
+  //   }
+
+  //   const key = color ? `${itemId}|${color}` : itemId
+
+  //   let cartData = structuredClone(cartItems)
+  //   if (cartData[key]) {
+  //     cartData[key] += 1
+  //   } else {
+  //     cartData[key] = 1
+  //   }
+
+  //   setCartItems(cartData)
+
+  //   if (user) {
+  //     try {
+  //       const token = await getToken()
+  //       await axios.post(
+  //         '/api/cart/update',
+  //         { cartData },
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       )
+  //       toast.success('Item added to cart')
+  //     } catch (error) {
+  //       toast.error(error.message)
+  //     }
+  //   }
+  // }
+
+  const addToCart = async (itemId, color = '', size = '') => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
-    const key = color ? `${itemId}|${color}` : itemId
+    const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "id|Red|M"
 
     let cartData = structuredClone(cartItems)
-    if (cartData[key]) {
-      cartData[key] += 1
-    } else {
-      cartData[key] = 1
-    }
+    cartData[key] = (cartData[key] || 0) + 1
 
     setCartItems(cartData)
 

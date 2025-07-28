@@ -50,7 +50,10 @@ const Cart = () => {
               <tbody>
                 {Object.keys(cartItems).map((itemId) => {
                   // const product = products.find(product => product._id === itemId);
-                  const [productId, selectedColor] = itemId.split('|')
+                  // const [productId, selectedColor] = itemId.split('|')
+                  const [productId, selectedColor = '', selectedSize = ''] =
+                    itemId.split('|')
+
                   const product = products.find(
                     (product) => product._id === productId
                   )
@@ -82,6 +85,11 @@ const Cart = () => {
                           {selectedColor && (
                             <p className='text-xs text-gray-500 mt-1'>
                               Color: {selectedColor}
+                            </p>
+                          )}
+                          {selectedSize && (
+                            <p className='text-xs text-gray-500 mt-1'>
+                              Size: {selectedSize}
                             </p>
                           )}
                           <button
