@@ -172,6 +172,7 @@ export const AppContextProvider = (props) => {
     if (user) {
       try {
         const token = await getToken()
+        console.log(cartData)
         await axios.post(
           '/api/cart/update',
           { cartData },
@@ -204,6 +205,7 @@ export const AppContextProvider = (props) => {
     if (user) {
       try {
         const token = await getToken()
+        console.log(cartData)
         await axios.post(
           '/api/cart/update',
           { cartData },
