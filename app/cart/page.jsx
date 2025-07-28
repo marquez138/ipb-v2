@@ -11,8 +11,8 @@ const Cart = () => {
     products,
     router,
     cartItems,
-    addToCart, // This now takes itemId, quantity, color, size
-    updateCartQuantity, // This now takes the full key (itemId|color|size) and quantity
+    addToCart,
+    updateCartQuantity,
     getCartCount,
   } = useAppContext()
 
@@ -48,20 +48,20 @@ const Cart = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(cartItems).map((itemKey) => {
-                  // itemKey will now be in the format "productId|color|size" or "productId"
+                {Object.keys(cartItems).map((itemId) => {
+                  // const product = products.find(product => product._id === itemId);
+                  // const [productId, selectedColor] = itemId.split('|')
                   const [productId, selectedColor = '', selectedSize = ''] =
-                    itemKey.split('|')
+                    itemId.split('|')
 
                   const product = products.find(
                     (product) => product._id === productId
                   )
 
-                  // Ensure product exists and quantity is valid
-                  if (!product || cartItems[itemKey] <= 0) return null
+                  if (!product || cartItems[itemId] <= 0) return null
 
                   return (
-                    <tr key={itemKey}>
+                    <tr key={itemId}>
                       <td className='flex items-center gap-4 py-4 md:px-4 px-1'>
                         <div>
                           <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
@@ -75,7 +75,7 @@ const Cart = () => {
                           </div>
                           <button
                             className='md:hidden text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemKey, 0)} // Pass itemKey
+                            onClick={() => updateCartQuantity(itemId, 0)}
                           >
                             Remove
                           </button>
@@ -94,7 +94,7 @@ const Cart = () => {
                           )}
                           <button
                             className='text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemKey, 0)} // Pass itemKey
+                            onClick={() => updateCartQuantity(itemId, 0)}
                           >
                             Remove
                           </button>
@@ -106,12 +106,8 @@ const Cart = () => {
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-center md:gap-2 gap-1'>
                           <button
-                            onClick={
-                              () =>
-                                updateCartQuantity(
-                                  itemKey,
-                                  cartItems[itemKey] - 1
-                                ) // Pass itemKey
+                            onClick={() =>
+                              updateCartQuantity(itemId, cartItems[itemId] - 1)
                             }
                           >
                             <Image
@@ -121,29 +117,15 @@ const Cart = () => {
                             />
                           </button>
                           <input
-                            onChange={
-                              (e) =>
-                                updateCartQuantity(
-                                  itemKey,
-                                  Number(e.target.value)
-                                ) // Pass itemKey
+                            onChange={(e) =>
+                              updateCartQuantity(itemId, Number(e.target.value))
                             }
                             type='number'
-                            value={cartItems[itemKey]}
+                            value={cartItems[itemId]}
                             className='w-8 border text-center appearance-none'
-                            min='0' // Allow quantity to be 0 to remove item
                           ></input>
                           <button
-                            onClick={() =>
-                              // When increasing, we add 1 to the current quantity for the specific itemKey
-                              // addToCart's new signature is (itemId, quantity, color, size)
-                              // Here, we want to update the *existing* item's quantity by 1.
-                              // So, updateCartQuantity is more appropriate.
-                              updateCartQuantity(
-                                itemKey,
-                                cartItems[itemKey] + 1
-                              )
-                            }
+                            onClick={() => addToCart(productId, selectedColor)}
                           >
                             <Image
                               src={assets.increase_arrow}
@@ -154,7 +136,7 @@ const Cart = () => {
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
-                        ${(product.offerPrice * cartItems[itemKey]).toFixed(2)}
+                        ${(product.offerPrice * cartItems[itemId]).toFixed(2)}
                       </td>
                     </tr>
                   )

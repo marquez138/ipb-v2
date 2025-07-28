@@ -9,7 +9,6 @@ import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
 import React from 'react'
-import toast from 'react-hot-toast' // Import toast for error/info messages
 
 const getColorHex = (colorName) => {
   const COLOR_MAP = {
@@ -38,7 +37,7 @@ const Product = () => {
   const [productData, setProductData] = useState(null)
 
   const [selectedColor, setSelectedColor] = useState('')
-  // Removed selectedSize state as we are now managing quantities per size
+  const [selectedSize, setSelectedSize] = useState('')
 
   const fetchProductData = async () => {
     const product = products.find((product) => product._id === id)
@@ -49,44 +48,12 @@ const Product = () => {
     fetchProductData()
   }, [id, products.length])
 
-  // Initialize sizeQuantities based on available sizes, default to 0
   const [sizeQuantities, setSizeQuantities] = useState({
-    S: 0,
-    M: 0,
-    L: 0,
-    XL: 0,
+    S: 1,
+    M: 1,
+    L: 1,
+    XL: 1,
   })
-
-  // Function to handle adding items to cart when "Add to Cart" or "Buy now" is clicked
-  const handleAddToCartClick = async (buyNow = false) => {
-    if (!user) {
-      toast('Please login to add items to cart.', { icon: '⚠️' })
-      return
-    }
-
-    if (!selectedColor && productData.colors?.length > 0) {
-      toast.error('Please select a color.')
-      return
-    }
-
-    let itemsAdded = 0
-    for (const size in sizeQuantities) {
-      const quantity = sizeQuantities[size]
-      if (quantity > 0) {
-        await addToCart(productData._id, quantity, selectedColor, size)
-        itemsAdded++
-      }
-    }
-
-    if (itemsAdded === 0) {
-      toast.error('Please specify a quantity for at least one size.')
-      return
-    }
-
-    if (buyNow) {
-      router.push('/cart')
-    }
-  }
 
   return productData ? (
     <>
@@ -192,22 +159,47 @@ const Product = () => {
               </div>
             )}
 
+            {/* {['S', 'M', 'L', 'XL'].map((size) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSize(size)}
+                className={`px-4 py-1 border rounded ${
+                  selectedSize === size
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-700'
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+            <p className='text-sm text-gray-600 mt-2'>
+              Selected Size: <strong>{selectedSize || 'None'}</strong>
+            </p> */}
+
             <div className='grid grid-cols-2 gap-4 mt-6'>
               {['S', 'M', 'L', 'XL'].map((size) => (
                 <div key={size} className='flex flex-col items-start space-y-2'>
-                  <span className='text-gray-700 font-medium'>{size}</span>{' '}
-                  {/* Display size label */}
+                  <button
+                    onClick={() => setSelectedSize(size)}
+                    className={`px-4 py-1 border rounded ${
+                      selectedSize === size
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {size}
+                  </button>
                   <input
                     type='number'
-                    min='0' // Allow 0 to enable removing a specific size
+                    min='1'
                     value={sizeQuantities[size]}
                     onChange={(e) =>
                       setSizeQuantities((prev) => ({
                         ...prev,
-                        [size]: Math.max(0, parseInt(e.target.value) || 0), // Ensure non-negative quantity
+                        [size]: Math.max(1, parseInt(e.target.value) || 1),
                       }))
                     }
-                    className='w-20 border px-2 py-1 rounded text-sm'
+                    className='w-16 border px-2 py-1 rounded text-sm'
                     placeholder='Qty'
                   />
                 </div>
@@ -235,13 +227,18 @@ const Product = () => {
 
             <div className='flex items-center mt-10 gap-4'>
               <button
-                onClick={() => handleAddToCartClick()}
+                onClick={() =>
+                  addToCart(productData._id, selectedColor, selectedSize)
+                }
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
                 Add to Cart
               </button>
               <button
-                onClick={() => handleAddToCartClick(true)}
+                onClick={() => {
+                  addToCart(productData._id, selectedColor, selectedSize)
+                  router.push(user ? '/cart' : '')
+                }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'
               >
                 Buy now
