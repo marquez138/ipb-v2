@@ -120,15 +120,52 @@ export const AppContextProvider = (props) => {
   //   }
   // }
 
-  const addToCart = async (itemId, color = '', size = '') => {
+  // const addToCart = async (itemId, color = '', size = '') => {
+  //   if (!user) {
+  //     return toast('Please login', { icon: '⚠️' })
+  //   }
+
+  //   const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "id|Red|M"
+
+  //   let cartData = structuredClone(cartItems)
+  //   cartData[key] = (cartData[key] || 0) + 1
+
+  //   setCartItems(cartData)
+
+  //   if (user) {
+  //     try {
+  //       const token = await getToken()
+  //       await axios.post(
+  //         '/api/cart/update',
+  //         { cartData },
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       )
+  //       toast.success('Item added to cart')
+  //     } catch (error) {
+  //       toast.error(error.message)
+  //     }
+  //   }
+  // }
+
+  const addToCart = async (itemId, quantity, color = '', size = '') => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
-    const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "id|Red|M"
+    if (quantity < 0) {
+      // Ensure quantity is not negative
+      return toast.error('Quantity cannot be negative')
+    }
+
+    const key = [itemId, color, size].filter(Boolean).join('|')
 
     let cartData = structuredClone(cartItems)
-    cartData[key] = (cartData[key] || 0) + 1
+
+    if (quantity === 0) {
+      delete cartData[key] // Remove the item variation if quantity is 0
+    } else {
+      cartData[key] = quantity // Set the specific quantity
+    }
 
     setCartItems(cartData)
 
@@ -140,19 +177,28 @@ export const AppContextProvider = (props) => {
           { cartData },
           { headers: { Authorization: `Bearer ${token}` } }
         )
-        toast.success('Item added to cart')
+        toast.success('Cart updated')
       } catch (error) {
         toast.error(error.message)
       }
     }
   }
 
-  const updateCartQuantity = async (itemId, quantity) => {
+  // Ensure that when calling updateCartQuantity, the 'itemId' parameter is the full key (e.g., "productId|color|size")
+  const updateCartQuantity = async (itemKey, quantity) => {
+    // Renamed itemId to itemKey for clarity
+    if (!user) {
+      return toast('Please login', { icon: '⚠️' })
+    }
+    if (quantity < 0) {
+      return toast.error('Quantity cannot be negative')
+    }
+
     let cartData = structuredClone(cartItems)
     if (quantity === 0) {
-      delete cartData[itemId]
+      delete cartData[itemKey]
     } else {
-      cartData[itemId] = quantity
+      cartData[itemKey] = quantity
     }
     setCartItems(cartData)
     if (user) {
@@ -169,6 +215,29 @@ export const AppContextProvider = (props) => {
       }
     }
   }
+
+  // const updateCartQuantity = async (itemId, quantity) => {
+  //   let cartData = structuredClone(cartItems)
+  //   if (quantity === 0) {
+  //     delete cartData[itemId]
+  //   } else {
+  //     cartData[itemId] = quantity
+  //   }
+  //   setCartItems(cartData)
+  //   if (user) {
+  //     try {
+  //       const token = await getToken()
+  //       await axios.post(
+  //         '/api/cart/update',
+  //         { cartData },
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       )
+  //       toast.success('Cart Updated')
+  //     } catch (error) {
+  //       toast.error(error.message)
+  //     }
+  //   }
+  // }
 
   // const getCartCount = () => {
   //   let totalCount = 0
