@@ -36,6 +36,8 @@ const Product = () => {
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
 
+  const [selectedColor, setSelectedColor] = useState('')
+
   const fetchProductData = async () => {
     const product = products.find((product) => product._id === id)
     setProductData(product)
@@ -125,19 +127,27 @@ const Product = () => {
 
             {productData.colors?.length > 0 && (
               <div className='mt-6'>
-                <p className='text-sm text-gray-700 mb-2'>Available Colors:</p>
+                <p className='text-sm text-gray-700 mb-2'>Choose a Color:</p>
                 <div className='flex gap-3'>
                   {productData.colors.map((color, index) => (
                     <div
                       key={index}
-                      className='w-8 h-8 rounded-full border border-gray-400'
-                      style={{
-                        backgroundColor: getColorHex(color),
-                      }}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-full cursor-pointer border-2 transition ${
+                        selectedColor === color
+                          ? 'ring-2 ring-offset-2 ring-orange-500'
+                          : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: getColorHex(color) }}
                       title={color}
                     ></div>
                   ))}
                 </div>
+                {selectedColor && (
+                  <p className='text-sm text-gray-600 mt-2'>
+                    Selected Color: <strong>{selectedColor}</strong>
+                  </p>
+                )}
               </div>
             )}
 
@@ -162,14 +172,14 @@ const Product = () => {
 
             <div className='flex items-center mt-10 gap-4'>
               <button
-                onClick={() => addToCart(productData._id)}
+                onClick={() => addToCart(productData._id, selectedColor)}
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
                 Add to Cart
               </button>
               <button
                 onClick={() => {
-                  addToCart(productData._id)
+                  addToCart(productData._id, selectedColor)
                   router.push(user ? '/cart' : '')
                 }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'

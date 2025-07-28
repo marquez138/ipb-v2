@@ -60,20 +60,51 @@ export const AppContextProvider = (props) => {
     }
   }
 
-  const addToCart = async (itemId) => {
+  // const addToCart = async (itemId) => {
+  //   if (!user) {
+  //     return toast('Please login', {
+  //       icon: '⚠️',
+  //     })
+  //   }
+
+  //   let cartData = structuredClone(cartItems)
+  //   if (cartData[itemId]) {
+  //     cartData[itemId] += 1
+  //   } else {
+  //     cartData[itemId] = 1
+  //   }
+  //   setCartItems(cartData)
+  //   if (user) {
+  //     try {
+  //       const token = await getToken()
+  //       await axios.post(
+  //         '/api/cart/update',
+  //         { cartData },
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       )
+  //       toast.success('Item added to cart')
+  //     } catch (error) {
+  //       toast.error(error.message)
+  //     }
+  //   }
+  // }
+
+  const addToCart = async (itemId, color = '') => {
     if (!user) {
-      return toast('Please login', {
-        icon: '⚠️',
-      })
+      return toast('Please login', { icon: '⚠️' })
     }
 
+    const key = color ? `${itemId}|${color}` : itemId
+
     let cartData = structuredClone(cartItems)
-    if (cartData[itemId]) {
-      cartData[itemId] += 1
+    if (cartData[key]) {
+      cartData[key] += 1
     } else {
-      cartData[itemId] = 1
+      cartData[key] = 1
     }
+
     setCartItems(cartData)
+
     if (user) {
       try {
         const token = await getToken()
@@ -112,26 +143,30 @@ export const AppContextProvider = (props) => {
     }
   }
 
+  // const getCartCount = () => {
+  //   let totalCount = 0
+  //   for (const items in cartItems) {
+  //     if (cartItems[items] > 0) {
+  //       totalCount += cartItems[items]
+  //     }
+  //   }
+  //   return totalCount
+  // }
+
   const getCartCount = () => {
-    let totalCount = 0
-    for (const items in cartItems) {
-      if (cartItems[items] > 0) {
-        totalCount += cartItems[items]
-      }
-    }
-    return totalCount
+    return Object.values(cartItems).reduce((sum, count) => sum + count, 0)
   }
 
-  const getCartAmount = () => {
-    let totalAmount = 0
-    for (const items in cartItems) {
-      let itemInfo = products.find((product) => product._id === items)
-      if (cartItems[items] > 0) {
-        totalAmount += itemInfo.offerPrice * cartItems[items]
-      }
-    }
-    return Math.floor(totalAmount * 100) / 100
-  }
+  // const getCartAmount = () => {
+  //   let totalAmount = 0
+  //   for (const items in cartItems) {
+  //     let itemInfo = products.find((product) => product._id === items)
+  //     if (cartItems[items] > 0) {
+  //       totalAmount += itemInfo.offerPrice * cartItems[items]
+  //     }
+  //   }
+  //   return Math.floor(totalAmount * 100) / 100
+  // }
 
   useEffect(() => {
     fetchProductData()
