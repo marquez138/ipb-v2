@@ -9,7 +9,6 @@ import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
 import React from 'react'
-import toast from 'react-hot-toast' // Import toast for error/info messages
 
 const getColorHex = (colorName) => {
   const COLOR_MAP = {
@@ -38,7 +37,6 @@ const Product = () => {
   const [productData, setProductData] = useState(null)
 
   const [selectedColor, setSelectedColor] = useState('')
-  // Removed selectedSize state as we are now managing quantities per size
 
   const fetchProductData = async () => {
     const product = products.find((product) => product._id === id)
@@ -48,45 +46,6 @@ const Product = () => {
   useEffect(() => {
     fetchProductData()
   }, [id, products.length])
-
-  // Initialize sizeQuantities based on available sizes, default to 0
-  const [sizeQuantities, setSizeQuantities] = useState({
-    S: 0,
-    M: 0,
-    L: 0,
-    XL: 0,
-  })
-
-  // Function to handle adding items to cart when "Add to Cart" or "Buy now" is clicked
-  const handleAddToCartClick = async (buyNow = false) => {
-    if (!user) {
-      toast('Please login to add items to cart.', { icon: '⚠️' })
-      return
-    }
-
-    if (!selectedColor && productData.colors?.length > 0) {
-      toast.error('Please select a color.')
-      return
-    }
-
-    let itemsAdded = 0
-    for (const size in sizeQuantities) {
-      const quantity = sizeQuantities[size]
-      if (quantity > 0) {
-        await addToCart(productData._id, quantity, selectedColor, size)
-        itemsAdded++
-      }
-    }
-
-    if (itemsAdded === 0) {
-      toast.error('Please specify a quantity for at least one size.')
-      return
-    }
-
-    if (buyNow) {
-      router.push('/cart')
-    }
-  }
 
   return productData ? (
     <>
@@ -192,28 +151,6 @@ const Product = () => {
               </div>
             )}
 
-            <div className='grid grid-cols-2 gap-4 mt-6'>
-              {['S', 'M', 'L', 'XL'].map((size) => (
-                <div key={size} className='flex flex-col items-start space-y-2'>
-                  <span className='text-gray-700 font-medium'>{size}</span>{' '}
-                  {/* Display size label */}
-                  <input
-                    type='number'
-                    min='0' // Allow 0 to enable removing a specific size
-                    value={sizeQuantities[size]}
-                    onChange={(e) =>
-                      setSizeQuantities((prev) => ({
-                        ...prev,
-                        [size]: Math.max(0, parseInt(e.target.value) || 0), // Ensure non-negative quantity
-                      }))
-                    }
-                    className='w-20 border px-2 py-1 rounded text-sm'
-                    placeholder='Qty'
-                  />
-                </div>
-              ))}
-            </div>
-
             <div className='overflow-x-auto'>
               <table className='table-auto border-collapse w-full max-w-72'>
                 <tbody>
@@ -235,13 +172,16 @@ const Product = () => {
 
             <div className='flex items-center mt-10 gap-4'>
               <button
-                onClick={() => handleAddToCartClick()}
+                onClick={() => addToCart(productData._id, selectedColor)}
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
                 Add to Cart
               </button>
               <button
-                onClick={() => handleAddToCartClick(true)}
+                onClick={() => {
+                  addToCart(productData._id, selectedColor)
+                  router.push(user ? '/cart' : '')
+                }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'
               >
                 Buy now

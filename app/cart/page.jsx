@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { assets } from '@/assets/assets'
 import OrderSummary from '@/components/OrderSummary'
 import Image from 'next/image'
@@ -15,11 +15,6 @@ const Cart = () => {
     updateCartQuantity,
     getCartCount,
   } = useAppContext()
-
-  useEffect(() => {
-    console.log('Cart Items keys on render:', Object.keys(cartItems))
-    console.log('Full cartItems object on render:', cartItems)
-  }, [cartItems])
 
   return (
     <>
@@ -53,22 +48,17 @@ const Cart = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(cartItems).map((itemKey) => {
+                {Object.keys(cartItems).map((itemId) => {
                   // const product = products.find(product => product._id === itemId);
-                  // const [productId, selectedColor] = itemId.split('|')
-                  // const [productId, selectedColor = '', selectedSize = ''] =
-                  //   itemId.split('|')
-                  const [productId, selectedColor = '', selectedSize = ''] =
-                    itemKey.split('|') // Make sure this line works as expected for all your keys.
-
+                  const [productId, selectedColor] = itemId.split('|')
                   const product = products.find(
                     (product) => product._id === productId
                   )
 
-                  if (!product || cartItems[itemKey] <= 0) return null
+                  if (!product || cartItems[itemId] <= 0) return null
 
                   return (
-                    <tr key={itemKey}>
+                    <tr key={itemId}>
                       <td className='flex items-center gap-4 py-4 md:px-4 px-1'>
                         <div>
                           <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
@@ -82,7 +72,7 @@ const Cart = () => {
                           </div>
                           <button
                             className='md:hidden text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemKey, 0)}
+                            onClick={() => updateCartQuantity(itemId, 0)}
                           >
                             Remove
                           </button>
@@ -94,14 +84,9 @@ const Cart = () => {
                               Color: {selectedColor}
                             </p>
                           )}
-                          {selectedSize && (
-                            <p className='text-xs text-gray-500 mt-1'>
-                              Size: {selectedSize}
-                            </p>
-                          )}
                           <button
                             className='text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemKey, 0)}
+                            onClick={() => updateCartQuantity(itemId, 0)}
                           >
                             Remove
                           </button>
@@ -114,10 +99,7 @@ const Cart = () => {
                         <div className='flex items-center md:gap-2 gap-1'>
                           <button
                             onClick={() =>
-                              updateCartQuantity(
-                                itemKey,
-                                cartItems[itemKey] - 1
-                              )
+                              updateCartQuantity(itemId, cartItems[itemId] - 1)
                             }
                           >
                             <Image
@@ -128,13 +110,10 @@ const Cart = () => {
                           </button>
                           <input
                             onChange={(e) =>
-                              updateCartQuantity(
-                                itemKey,
-                                Number(e.target.value)
-                              )
+                              updateCartQuantity(itemId, Number(e.target.value))
                             }
                             type='number'
-                            value={cartItems[itemKey]}
+                            value={cartItems[itemId]}
                             className='w-8 border text-center appearance-none'
                           ></input>
                           <button
@@ -149,7 +128,7 @@ const Cart = () => {
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
-                        ${(product.offerPrice * cartItems[itemKey]).toFixed(2)}
+                        ${(product.offerPrice * cartItems[itemId]).toFixed(2)}
                       </td>
                     </tr>
                   )
