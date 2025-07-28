@@ -51,9 +51,15 @@ const Cart = () => {
                 {Object.keys(cartItems).map((itemId) => {
                   // const product = products.find(product => product._id === itemId);
                   // const [productId, selectedColor] = itemId.split('|')
+                  // const [productId, selectedColor = '', selectedSize = ''] =
+                  //   itemId.split('|')
+
+                  // const product = products.find(
+                  //   (product) => product._id === productId
+                  // )
+
                   const [productId, selectedColor = '', selectedSize = ''] =
                     itemId.split('|')
-
                   const product = products.find(
                     (product) => product._id === productId
                   )
@@ -80,7 +86,7 @@ const Cart = () => {
                             Remove
                           </button>
                         </div>
-                        <div className='text-sm hidden md:block'>
+                        {/* <div className='text-sm hidden md:block'>
                           <p className='text-gray-800'>{product.name}</p>
                           {selectedColor && (
                             <p className='text-xs text-gray-500 mt-1'>
@@ -98,12 +104,33 @@ const Cart = () => {
                           >
                             Remove
                           </button>
+                        </div> */}
+                        <div className='text-sm hidden md:block'>
+                          <p className='text-gray-800 font-medium'>
+                            {product.name}
+                          </p>
+                          {selectedColor && (
+                            <p className='text-xs text-gray-500'>
+                              Color: {selectedColor}
+                            </p>
+                          )}
+                          {selectedSize && (
+                            <p className='text-xs text-gray-500'>
+                              Size: {selectedSize}
+                            </p>
+                          )}
+                          <button
+                            className='text-xs text-orange-600 mt-1'
+                            onClick={() => updateCartQuantity(itemId, 0)}
+                          >
+                            Remove
+                          </button>
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
                         ${product.offerPrice}
                       </td>
-                      <td className='py-4 md:px-4 px-1'>
+                      {/* <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-center md:gap-2 gap-1'>
                           <button
                             onClick={() =>
@@ -134,7 +161,43 @@ const Cart = () => {
                             />
                           </button>
                         </div>
+                      </td> */}
+                      <td className='py-4 md:px-4 px-1'>
+                        <div className='flex items-center md:gap-2 gap-1'>
+                          <button
+                            onClick={() =>
+                              updateCartQuantity(itemId, cartItems[itemId] - 1)
+                            }
+                          >
+                            <Image
+                              src={assets.decrease_arrow}
+                              alt='decrease_arrow'
+                              className='w-4 h-4'
+                            />
+                          </button>
+                          <input
+                            type='number'
+                            value={cartItems[itemId]}
+                            min='1'
+                            onChange={(e) =>
+                              updateCartQuantity(itemId, Number(e.target.value))
+                            }
+                            className='w-10 border text-center appearance-none'
+                          />
+                          <button
+                            onClick={() =>
+                              updateCartQuantity(itemId, cartItems[itemId] + 1)
+                            }
+                          >
+                            <Image
+                              src={assets.increase_arrow}
+                              alt='increase_arrow'
+                              className='w-4 h-4'
+                            />
+                          </button>
+                        </div>
                       </td>
+
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
                         ${(product.offerPrice * cartItems[itemId]).toFixed(2)}
                       </td>
