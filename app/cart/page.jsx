@@ -105,7 +105,7 @@ const Cart = () => {
                       </td>
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-center md:gap-2 gap-1'>
-                          <button
+                          {/* <button
                             onClick={() =>
                               updateCartQuantity(itemId, cartItems[itemId] - 1)
                             }
@@ -126,6 +126,38 @@ const Cart = () => {
                           ></input>
                           <button
                             onClick={() => addToCart(productId, selectedColor)}
+                          >
+                            <Image
+                              src={assets.increase_arrow}
+                              alt='increase_arrow'
+                              className='w-4 h-4'
+                            />
+                          </button> */}
+                          <button
+                            onClick={() =>
+                              updateCartQuantity(itemId, cartItems[itemId] - 1)
+                            }
+                          >
+                            <Image
+                              src={assets.decrease_arrow}
+                              alt='decrease_arrow'
+                              className='w-4 h-4'
+                            />
+                          </button>
+
+                          <input
+                            type='number'
+                            value={cartItems[itemId]}
+                            onChange={(e) =>
+                              updateCartQuantity(itemId, Number(e.target.value))
+                            }
+                            className='w-8 border text-center appearance-none'
+                          />
+
+                          <button
+                            onClick={() =>
+                              addToCart(productId, selectedColor, selectedSize)
+                            }
                           >
                             <Image
                               src={assets.increase_arrow}
