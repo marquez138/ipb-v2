@@ -16,6 +16,11 @@ const Cart = () => {
     getCartCount,
   } = useAppContext()
 
+  useEffect(() => {
+    console.log('Cart Items keys on render:', Object.keys(cartItems))
+    console.log('Full cartItems object on render:', cartItems)
+  }, [cartItems])
+
   return (
     <>
       <Navbar />
@@ -48,11 +53,13 @@ const Cart = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(cartItems).map((itemId) => {
+                {Object.keys(cartItems).map((itemKey) => {
                   // const product = products.find(product => product._id === itemId);
                   // const [productId, selectedColor] = itemId.split('|')
+                  // const [productId, selectedColor = '', selectedSize = ''] =
+                  //   itemId.split('|')
                   const [productId, selectedColor = '', selectedSize = ''] =
-                    itemId.split('|')
+                    itemKey.split('|') // Make sure this line works as expected for all your keys.
 
                   const product = products.find(
                     (product) => product._id === productId
@@ -61,7 +68,7 @@ const Cart = () => {
                   if (!product || cartItems[itemId] <= 0) return null
 
                   return (
-                    <tr key={itemId}>
+                    <tr key={itemKey}>
                       <td className='flex items-center gap-4 py-4 md:px-4 px-1'>
                         <div>
                           <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
@@ -121,7 +128,7 @@ const Cart = () => {
                               updateCartQuantity(itemId, Number(e.target.value))
                             }
                             type='number'
-                            value={cartItems[itemId]}
+                            value={cartItems[itemKey]}
                             className='w-8 border text-center appearance-none'
                           ></input>
                           <button
