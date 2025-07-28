@@ -65,7 +65,7 @@ const Cart = () => {
                     (product) => product._id === productId
                   )
 
-                  if (!product || cartItems[itemId] <= 0) return null
+                  if (!product || cartItems[itemKey] <= 0) return null
 
                   return (
                     <tr key={itemKey}>
@@ -82,7 +82,7 @@ const Cart = () => {
                           </div>
                           <button
                             className='md:hidden text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemId, 0)}
+                            onClick={() => updateCartQuantity(itemKey, 0)}
                           >
                             Remove
                           </button>
@@ -101,7 +101,7 @@ const Cart = () => {
                           )}
                           <button
                             className='text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemId, 0)}
+                            onClick={() => updateCartQuantity(itemKey, 0)}
                           >
                             Remove
                           </button>
@@ -114,7 +114,10 @@ const Cart = () => {
                         <div className='flex items-center md:gap-2 gap-1'>
                           <button
                             onClick={() =>
-                              updateCartQuantity(itemId, cartItems[itemId] - 1)
+                              updateCartQuantity(
+                                itemKey,
+                                cartItems[itemKey] - 1
+                              )
                             }
                           >
                             <Image
@@ -125,7 +128,10 @@ const Cart = () => {
                           </button>
                           <input
                             onChange={(e) =>
-                              updateCartQuantity(itemId, Number(e.target.value))
+                              updateCartQuantity(
+                                itemKey,
+                                Number(e.target.value)
+                              )
                             }
                             type='number'
                             value={cartItems[itemKey]}
@@ -143,7 +149,7 @@ const Cart = () => {
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
-                        ${(product.offerPrice * cartItems[itemId]).toFixed(2)}
+                        ${(product.offerPrice * cartItems[itemKey]).toFixed(2)}
                       </td>
                     </tr>
                   )
