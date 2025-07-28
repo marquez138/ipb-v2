@@ -48,6 +48,13 @@ const Product = () => {
     fetchProductData()
   }, [id, products.length])
 
+  const [sizeQuantities, setSizeQuantities] = useState({
+    S: 1,
+    M: 1,
+    L: 1,
+    XL: 1,
+  })
+
   return productData ? (
     <>
       <Navbar />
@@ -152,7 +159,7 @@ const Product = () => {
               </div>
             )}
 
-            {['S', 'M', 'L', 'XL'].map((size) => (
+            {/* {['S', 'M', 'L', 'XL'].map((size) => (
               <button
                 key={size}
                 onClick={() => setSelectedSize(size)}
@@ -167,7 +174,37 @@ const Product = () => {
             ))}
             <p className='text-sm text-gray-600 mt-2'>
               Selected Size: <strong>{selectedSize || 'None'}</strong>
-            </p>
+            </p> */}
+
+            <div className='grid grid-cols-2 gap-4 mt-6'>
+              {['S', 'M', 'L', 'XL'].map((size) => (
+                <div key={size} className='flex flex-col items-start space-y-2'>
+                  <button
+                    onClick={() => setSelectedSize(size)}
+                    className={`px-4 py-1 border rounded ${
+                      selectedSize === size
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                  <input
+                    type='number'
+                    min='1'
+                    value={sizeQuantities[size]}
+                    onChange={(e) =>
+                      setSizeQuantities((prev) => ({
+                        ...prev,
+                        [size]: Math.max(1, parseInt(e.target.value) || 1),
+                      }))
+                    }
+                    className='w-16 border px-2 py-1 rounded text-sm'
+                    placeholder='Qty'
+                  />
+                </div>
+              ))}
+            </div>
 
             <div className='overflow-x-auto'>
               <table className='table-auto border-collapse w-full max-w-72'>
@@ -191,7 +228,12 @@ const Product = () => {
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() =>
-                  addToCart(productData._id, selectedColor, selectedSize)
+                  addToCart(
+                    productData._id,
+                    selectedColor,
+                    selectedSize,
+                    sizeQuantities[selectedSize]
+                  )
                 }
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
@@ -199,7 +241,12 @@ const Product = () => {
               </button>
               <button
                 onClick={() => {
-                  addToCart(productData._id, selectedColor, selectedSize)
+                  addToCart(
+                    productData._id,
+                    selectedColor,
+                    selectedSize,
+                    sizeQuantities[selectedSize]
+                  )
                   router.push(user ? '/cart' : '')
                 }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'

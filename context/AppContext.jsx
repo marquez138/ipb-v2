@@ -120,15 +120,42 @@ export const AppContextProvider = (props) => {
   //   }
   // }
 
-  const addToCart = async (itemId, color = '', size = '') => {
+  // const addToCart = async (itemId, color = '', size = '') => {
+  //   if (!user) {
+  //     return toast('Please login', { icon: '⚠️' })
+  //   }
+
+  //   const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "id|Red|M"
+
+  //   let cartData = structuredClone(cartItems)
+  //   cartData[key] = (cartData[key] || 0) + 1
+
+  //   setCartItems(cartData)
+
+  //   if (user) {
+  //     try {
+  //       const token = await getToken()
+  //       await axios.post(
+  //         '/api/cart/update',
+  //         { cartData },
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       )
+  //       toast.success('Item added to cart')
+  //     } catch (error) {
+  //       toast.error(error.message)
+  //     }
+  //   }
+  // }
+
+  const addToCart = async (itemId, color = '', size = '', quantity = 1) => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
-    const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "id|Red|M"
+    const key = [itemId, color, size].filter(Boolean).join('|') // e.g. "productId|Red|M"
 
     let cartData = structuredClone(cartItems)
-    cartData[key] = (cartData[key] || 0) + 1
+    cartData[key] = (cartData[key] || 0) + quantity
 
     setCartItems(cartData)
 
