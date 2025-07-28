@@ -54,9 +54,9 @@ const Cart = () => {
                   const [productId, selectedColor = '', selectedSize = ''] =
                     itemId.split('|')
 
-                  // const product = products.find(
-                  //   (product) => product._id === productId
-                  // )
+                  const product = products.find(
+                    (product) => product._id === productId
+                  )
 
                   if (!product || cartItems[itemId] <= 0) return null
 
