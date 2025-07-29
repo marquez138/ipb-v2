@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, useCallback } from 'react' // 1. Import useCallback
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { assets } from '@/assets/assets'
 import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
@@ -53,16 +53,14 @@ const Product = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const mainImageContainerRef = useRef(null)
 
-  // 2. Wrap fetchProductData in useCallback
   const fetchProductData = useCallback(() => {
     const product = products.find((product) => product._id === id)
     setProductData(product)
     if (product && product.image.length > 0) {
       setMainImage(product.image[0])
     }
-  }, [id, products]) // Dependencies for useCallback
+  }, [id, products])
 
-  // 3. Add the memoized function to the useEffect dependency array
   useEffect(() => {
     fetchProductData()
   }, [fetchProductData])
@@ -87,6 +85,9 @@ const Product = () => {
 
       reader.readAsDataURL(file)
     }
+    // --- FIX: Reset the file input value ---
+    // This allows the onChange event to fire even if the same file is selected again.
+    e.target.value = null
   }
 
   // ...(The rest of your handler functions and JSX remain exactly the same)...
@@ -150,7 +151,6 @@ const Product = () => {
     }))
   }
 
-  // --- UPDATED: Convert to Ratios Before Adding to Cart ---
   const handleAddToCart = (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
@@ -161,15 +161,13 @@ const Product = () => {
 
     const customizationsWithRatios = {}
 
-    // Convert absolute pixel values to ratios
     for (const [baseImageUrl, overlay] of Object.entries(customOverlays)) {
       customizationsWithRatios[baseImageUrl] = {
         src: overlay.src,
         rotation: overlay.rotation,
-        // Ratios are calculated against the container's dimensions
         xRatio: overlay.position.x / containerWidth,
         yRatio: overlay.position.y / containerHeight,
-        sizeRatio: overlay.size / containerWidth, // Assuming size is proportional to width
+        sizeRatio: overlay.size / containerWidth,
       }
     }
 
@@ -346,7 +344,6 @@ const Product = () => {
                 )}
               </div>
             )}
-
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => handleAddToCart(false)}
@@ -362,9 +359,6 @@ const Product = () => {
               </button>
             </div>
           </div>
-        </div>
-        <div className='flex flex-col items-center'>
-          {/* ... Featured Products ... */}
         </div>
       </div>
       <Footer />
