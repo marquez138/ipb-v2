@@ -27,16 +27,19 @@ export async function POST(request) {
     const category = formData.get('category')
     const price = formData.get('price')
     const offerPrice = formData.get('offerPrice')
-    const colors = formData.getAll('colors[]') // Get array of colors
+    const colors = formData.getAll('colors[]')
 
+    // --- FIX: Get all files under a single key ---
+    const allFiles = formData.getAll('images')
     const imagesByColor = {}
+    let fileIndex = 0
 
-    // --- NEW: Process and upload images for each color ---
+    // --- CORRECTED LOGIC: Distribute files to their respective colors ---
     for (const color of colors) {
       imagesByColor[color] = []
+      // Assuming 3 views per color
       for (let i = 0; i < 3; i++) {
-        // Assuming max 3 views
-        const file = formData.get(`images_${color}_${i}`)
+        const file = allFiles[fileIndex]
         if (file) {
           const arrayBuffer = await file.arrayBuffer()
           const buffer = Buffer.from(arrayBuffer)
@@ -52,13 +55,10 @@ export async function POST(request) {
             stream.end(buffer)
           })
 
-          imagesByColor[color][i] = result.secure_url
-        } else {
-          imagesByColor[color][i] = null // Keep placeholder if no image was uploaded
+          imagesByColor[color].push(result.secure_url)
         }
+        fileIndex++
       }
-      // Filter out null values if you don't want to store placeholders
-      imagesByColor[color] = imagesByColor[color].filter((url) => url !== null)
     }
 
     await connectDB()
@@ -70,7 +70,7 @@ export async function POST(request) {
       price: Number(price),
       offerPrice: Number(offerPrice),
       colors,
-      imagesByColor, // Save the new structured object
+      imagesByColor,
       date: Date.now(),
     })
 
