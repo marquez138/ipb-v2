@@ -241,8 +241,8 @@ const AddProduct = () => {
                       onChange={(e) => handleImageChange(e, color, viewIndex)}
                       type='file'
                       id={`${color}-${viewIndex}`}
-                      // All inputs should have the same name attribute
-                      name='images'
+                      // --- FIX: Remove the unnecessary name attribute ---
+                      // name='images' // REMOVE THIS LINE
                       hidden
                     />
                     <Image
