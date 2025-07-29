@@ -11,7 +11,7 @@ const Cart = () => {
     products,
     router,
     cartItems,
-    addToCart,
+    addToCart, // Note: addToCart with customizations is complex from the cart page. This is for quantity increase.
     updateCartQuantity,
     getCartCount,
   } = useAppContext()
@@ -48,65 +48,66 @@ const Cart = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(cartItems).map((itemId) => {
-                  const [productId, selectedColor, customImage] =
-                    itemId.split('|')
-                  const product = products.find(
-                    (product) => product._id === productId
-                  )
+                {Object.entries(cartItems).map(([itemKey, itemData]) => {
+                  const [productId, selectedColor] = itemKey.split('|')
+                  const product = products.find((p) => p._id === productId)
 
-                  if (!product || cartItems[itemId] <= 0) return null
+                  if (!product) return null
 
                   return (
-                    <tr key={itemId}>
-                      <td className='flex items-center gap-4 py-4 md:px-4 px-1'>
-                        <div>
-                          <div className='flex items-center gap-4 py-4 md:px-4 px-1'>
-                            <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
-                              <Image
-                                src={product.image[0]}
-                                alt={product.name}
-                                className='w-16 h-auto object-cover mix-blend-multiply'
-                                width={1280}
-                                height={720}
-                              />
-                            </div>
-                            <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
-                              <Image
-                                src={customImage || product.image[0]}
-                                alt={product.name}
-                                className='w-16 h-auto object-cover'
-                                width={1280}
-                                height={720}
-                              />
-                            </div>
-                          </div>
+                    <tr key={itemKey}>
+                      <td className='py-4 md:px-4 px-1'>
+                        <div className='flex items-start gap-4'>
+                          <Image
+                            src={product.image[0]}
+                            alt={product.name}
+                            className='w-20 h-auto object-cover mix-blend-multiply bg-gray-100 rounded-lg p-1'
+                            width={120}
+                            height={120}
+                          />
+                          <div>
+                            <p className='text-gray-800 font-medium'>
+                              {product.name}
+                            </p>
+                            {selectedColor && (
+                              <p className='text-xs text-gray-500 mt-1'>
+                                Color: {selectedColor}
+                              </p>
+                            )}
 
-                          <button
-                            className='md:hidden text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemId, 0)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div className='text-sm hidden md:block'>
-                          <p className='text-gray-800'>{product.name}</p>
-                          {selectedColor && (
-                            <p className='text-xs text-gray-500 mt-1'>
-                              Color: {selectedColor}
-                            </p>
-                          )}
-                          {customImage && (
-                            <p className='text-xs text-gray-500 mt-1'>
-                              Customized
-                            </p>
-                          )}
-                          <button
-                            className='text-xs text-orange-600 mt-1'
-                            onClick={() => updateCartQuantity(itemId, 0)}
-                          >
-                            Remove
-                          </button>
+                            {/* --- NEW: Display Customized Images --- */}
+                            {itemData.customizations ? (
+                              <div className='mt-2'>
+                                <p className='text-xs text-gray-600 font-medium mb-1'>
+                                  Your Designs:
+                                </p>
+                                <div className='flex gap-2 flex-wrap'>
+                                  {Object.values(itemData.customizations).map(
+                                    (imgSrc, idx) => (
+                                      <Image
+                                        key={idx}
+                                        src={imgSrc}
+                                        alt={`custom design ${idx + 1}`}
+                                        className='w-12 h-12 object-cover bg-gray-200 rounded'
+                                        width={48}
+                                        height={48}
+                                      />
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <p className='text-xs text-gray-500 mt-1'>
+                                Standard Product
+                              </p>
+                            )}
+                            <button
+                              className='text-xs text-orange-600 mt-2'
+                              onClick={() => updateCartQuantity(itemKey, 0)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
@@ -116,7 +117,7 @@ const Cart = () => {
                         <div className='flex items-center md:gap-2 gap-1'>
                           <button
                             onClick={() =>
-                              updateCartQuantity(itemId, cartItems[itemId] - 1)
+                              updateCartQuantity(itemKey, itemData.quantity - 1)
                             }
                           >
                             <Image
@@ -126,16 +127,14 @@ const Cart = () => {
                             />
                           </button>
                           <input
-                            onChange={(e) =>
-                              updateCartQuantity(itemId, Number(e.target.value))
-                            }
                             type='number'
-                            value={cartItems[itemId]}
+                            value={itemData.quantity}
+                            readOnly
                             className='w-8 border text-center appearance-none'
-                          ></input>
+                          />
                           <button
                             onClick={() =>
-                              addToCart(productId, selectedColor, customImage)
+                              updateCartQuantity(itemKey, itemData.quantity + 1)
                             }
                           >
                             <Image
@@ -147,7 +146,7 @@ const Cart = () => {
                         </div>
                       </td>
                       <td className='py-4 md:px-4 px-1 text-gray-600'>
-                        ${(product.offerPrice * cartItems[itemId]).toFixed(2)}
+                        ${(product.offerPrice * itemData.quantity).toFixed(2)}
                       </td>
                     </tr>
                   )

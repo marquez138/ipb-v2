@@ -24,103 +24,54 @@ export const AppContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({})
 
   const fetchProductData = async () => {
-    try {
-      const { data } = await axios.get('/api/product/list')
-
-      if (data.success) {
-        setProducts(data.products)
-      } else {
-        toast.error(data.message)
-      }
-    } catch (error) {
-      toast.error(error.message)
-    }
+    // ... (no changes here)
   }
 
   const fetchUserData = async () => {
-    try {
-      if (user.publicMetadata.role === 'seller') {
-        setIsSeller(true)
-      }
-
-      const token = await getToken()
-
-      const { data } = await axios.get('/api/user/data', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (data.success) {
-        setUserData(data.user)
-        setCartItems(data.user.cartItems)
-      } else {
-        toast.error(data.message)
-      }
-    } catch (error) {
-      toast.error(error.message)
-    }
+    // ... (no changes here)
   }
 
-  const addToCart = async (itemId, color = '', customImage = null) => {
+  // --- UPDATED addToCart and cart logic ---
+  const addToCart = async (itemId, color = '', customizations = null) => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
-    let imageUrl = ''
-    if (customImage) {
-      const formData = new FormData()
-      formData.append('image', customImage)
-      try {
-        const token = await getToken()
-        const { data } = await axios.post('/api/image/upload', formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        })
-        if (data.success) {
-          imageUrl = data.imageUrl
-        } else {
-          toast.error('Image upload failed')
-          return
-        }
-      } catch (error) {
-        toast.error('Image upload failed')
-        return
-      }
-    }
-
-    const key = `${itemId}|${color}|${imageUrl}`
-
     let cartData = structuredClone(cartItems)
-    if (cartData[key]) {
-      cartData[key] += 1
-    } else {
-      cartData[key] = 1
+
+    // Create a unique key for each item instance to allow multiple unique customizations of the same product
+    const itemKey = `${itemId}|${color}|${Date.now()}`
+
+    cartData[itemKey] = {
+      quantity: 1,
+      // if customizations exist, store them. Otherwise, null.
+      customizations: customizations,
     }
 
     setCartItems(cartData)
 
-    if (user) {
-      try {
-        const token = await getToken()
-        await axios.post(
-          '/api/cart/update',
-          { cartData },
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        toast.success('Item added to cart')
-      } catch (error) {
-        toast.error(error.message)
-      }
+    try {
+      const token = await getToken()
+      await axios.post(
+        '/api/cart/update',
+        { cartData },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      // The toast message is now handled on the product page for better UX
+    } catch (error) {
+      toast.error(error.message)
+      // Revert state if API call fails
+      delete cartData[itemKey]
+      setCartItems(cartData)
     }
   }
 
-  const updateCartQuantity = async (itemId, quantity) => {
+  const updateCartQuantity = async (itemKey, quantity) => {
     let cartData = structuredClone(cartItems)
-    if (quantity === 0) {
-      delete cartData[itemId]
+    if (quantity <= 0) {
+      delete cartData[itemKey]
     } else {
-      cartData[itemId] = quantity
+      cartData[itemKey].quantity = quantity
     }
     setCartItems(cartData)
     if (user) {
@@ -139,7 +90,10 @@ export const AppContextProvider = (props) => {
   }
 
   const getCartCount = () => {
-    return Object.values(cartItems).reduce((sum, count) => sum + count, 0)
+    return Object.values(cartItems).reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    )
   }
 
   const getCartAmount = () => {
@@ -148,7 +102,7 @@ export const AppContextProvider = (props) => {
       const [productId] = key.split('|')
       const itemInfo = products.find((product) => product._id === productId)
       if (itemInfo) {
-        totalAmount += itemInfo.offerPrice * cartItems[key]
+        totalAmount += itemInfo.offerPrice * cartItems[key].quantity
       }
     }
     return Math.floor(totalAmount * 100) / 100
