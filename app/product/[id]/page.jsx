@@ -35,7 +35,7 @@ const Product = () => {
 
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
-  const [customImages, setCustomImages] = useState({})
+  const [customImage, setCustomImage] = useState(null)
 
   const [selectedColor, setSelectedColor] = useState('')
 
@@ -48,18 +48,10 @@ const Product = () => {
     fetchProductData()
   }, [id, products.length])
 
-  const handleCustomImageChange = (e, index) => {
+  const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setCustomImages((prev) => ({ ...prev, [index]: e.target.files[0] }))
+      setCustomImage(e.target.files[0])
     }
-  }
-
-  const removeCustomImage = (index) => {
-    setCustomImages((prev) => {
-      const newCustomImages = { ...prev }
-      delete newCustomImages[index]
-      return newCustomImages
-    })
   }
 
   return productData ? (
@@ -70,7 +62,6 @@ const Product = () => {
           <div className='px-5 lg:px-16 xl:px-20'>
             <div className='rounded-lg overflow-hidden bg-gray-500/10 mb-4'>
               <Image
-                key={mainImage || productData.image[0]}
                 src={mainImage || productData.image[0]}
                 alt='alt'
                 className='w-full h-auto object-cover mix-blend-multiply'
@@ -81,49 +72,18 @@ const Product = () => {
 
             <div className='grid grid-cols-4 gap-4'>
               {productData.image.map((image, index) => (
-                <div key={index} className='flex flex-col items-center'>
-                  <div
-                    onClick={() =>
-                      setMainImage(
-                        customImages[index]
-                          ? URL.createObjectURL(customImages[index])
-                          : image
-                      )
-                    }
-                    className='cursor-pointer rounded-lg overflow-hidden bg-gray-500/10'
-                  >
-                    <Image
-                      src={
-                        customImages[index]
-                          ? URL.createObjectURL(customImages[index])
-                          : image
-                      }
-                      alt='alt'
-                      className='w-full h-auto object-cover'
-                      width={1280}
-                      height={720}
-                    />
-                  </div>
-                  <input
-                    type='file'
-                    id={`file-upload-${index}`}
-                    className='hidden'
-                    onChange={(e) => handleCustomImageChange(e, index)}
+                <div
+                  key={index}
+                  onClick={() => setMainImage(image)}
+                  className='cursor-pointer rounded-lg overflow-hidden bg-gray-500/10'
+                >
+                  <Image
+                    src={image}
+                    alt='alt'
+                    className='w-full h-auto object-cover mix-blend-multiply'
+                    width={1280}
+                    height={720}
                   />
-                  <label
-                    htmlFor={`file-upload-${index}`}
-                    className='text-xs text-center mt-1 cursor-pointer bg-gray-200 px-2 py-1 rounded-md hover:bg-gray-300'
-                  >
-                    Upload
-                  </label>
-                  {customImages[index] && (
-                    <button
-                      onClick={() => removeCustomImage(index)}
-                      className='text-xs text-red-500 mt-1'
-                    >
-                      Remove
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -197,6 +157,21 @@ const Product = () => {
                 )}
               </div>
             )}
+            <div className='my-6'>
+              <p className='text-sm text-gray-700 mb-2'>
+                Customize with your own image:
+              </p>
+              <input
+                type='file'
+                onChange={handleCustomImageChange}
+                className='text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100'
+              />
+              {customImage && (
+                <p className='text-sm text-gray-600 mt-2'>
+                  Selected file: <strong>{customImage.name}</strong>
+                </p>
+              )}
+            </div>
 
             <div className='overflow-x-auto'>
               <table className='table-auto border-collapse w-full max-w-72'>
@@ -220,7 +195,7 @@ const Product = () => {
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() =>
-                  addToCart(productData._id, selectedColor, customImages)
+                  addToCart(productData._id, selectedColor, customImage)
                 }
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
@@ -228,7 +203,7 @@ const Product = () => {
               </button>
               <button
                 onClick={() => {
-                  addToCart(productData._id, selectedColor, customImages)
+                  addToCart(productData._id, selectedColor, customImage)
                   router.push(user ? '/cart' : '')
                 }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'
