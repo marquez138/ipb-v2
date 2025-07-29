@@ -29,17 +29,16 @@ export async function POST(request) {
     const offerPrice = formData.get('offerPrice')
     const colors = formData.getAll('colors[]')
 
-    // --- FIX: Get all files under a single key ---
-    const allFiles = formData.getAll('images')
     const imagesByColor = {}
-    let fileIndex = 0
 
-    // --- CORRECTED LOGIC: Distribute files to their respective colors ---
+    // --- FIX: Look for unique file keys and rebuild the object ---
     for (const color of colors) {
       imagesByColor[color] = []
-      // Assuming 3 views per color
+      // Assuming a max of 3 views, loop to find the files for this color
       for (let i = 0; i < 3; i++) {
-        const file = allFiles[fileIndex]
+        const fileKey = `images_${color}_${i}`
+        const file = formData.get(fileKey) // Use .get() for unique keys
+
         if (file) {
           const arrayBuffer = await file.arrayBuffer()
           const buffer = Buffer.from(arrayBuffer)
@@ -57,7 +56,6 @@ export async function POST(request) {
 
           imagesByColor[color].push(result.secure_url)
         }
-        fileIndex++
       }
     }
 

@@ -5,12 +5,10 @@ import Image from 'next/image'
 import { useAppContext } from '@/context/AppContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import ColorSwatchSelect from '@/components/ColorSwatchSelect' // We can reuse this for color selection
 
 const AddProduct = () => {
   const { getToken } = useAppContext()
 
-  // --- NEW: Advanced State for Product Data ---
   const [productData, setProductData] = useState({
     name: '',
     description: '',
@@ -18,18 +16,16 @@ const AddProduct = () => {
     price: '',
     offerPrice: '',
     colors: [],
-    imagesByColor: {}, // Stores files: { "Black": [file1, file2], "White": [file3, file4] }
+    imagesByColor: {},
   })
 
   const [newColor, setNewColor] = useState('')
 
-  // --- Handlers for Text Inputs ---
   const handleTextChange = (e) => {
     const { name, value } = e.target
     setProductData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // --- Handlers for Color Management ---
   const handleAddColor = () => {
     if (newColor && !productData.colors.includes(newColor)) {
       setProductData((prev) => ({
@@ -37,7 +33,7 @@ const AddProduct = () => {
         colors: [...prev.colors, newColor],
         imagesByColor: {
           ...prev.imagesByColor,
-          [newColor]: [null, null, null], // Initialize with placeholders for 3 views
+          [newColor]: [null, null, null],
         },
       }))
       setNewColor('')
@@ -53,7 +49,6 @@ const AddProduct = () => {
     })
   }
 
-  // --- Handler for Image Uploads ---
   const handleImageChange = (e, color, viewIndex) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
@@ -68,7 +63,6 @@ const AddProduct = () => {
     }
   }
 
-  // --- Updated Submit Handler ---
   const handleSubmit = async (e) => {
     e.preventDefault()
     const toastId = toast.loading('Adding product...')
@@ -83,16 +77,15 @@ const AddProduct = () => {
       formData.append('price', productData.price)
       formData.append('offerPrice', productData.offerPrice)
 
-      // Append colors array
       productData.colors.forEach((color) => {
         formData.append('colors[]', color)
       })
 
-      // Append image files with structured keys
+      // --- FIX: Append files with a unique key for each color and view ---
       for (const color of productData.colors) {
         productData.imagesByColor[color].forEach((file, index) => {
           if (file) {
-            // Key format: "images_COLOR_INDEX" -> e.g., "images_Black_0"
+            // This creates a unique key like "images_Black_0"
             formData.append(`images_${color}_${index}`, file)
           }
         })
@@ -104,7 +97,6 @@ const AddProduct = () => {
 
       if (data.success) {
         toast.success('Product added successfully!', { id: toastId })
-        // Reset form state
         setProductData({
           name: '',
           description: '',
@@ -123,6 +115,7 @@ const AddProduct = () => {
     }
   }
 
+  // --- The JSX for this component remains unchanged ---
   return (
     <div className='flex-1 min-h-screen'>
       <form onSubmit={handleSubmit} className='md:p-10 p-4 space-y-6 max-w-2xl'>
