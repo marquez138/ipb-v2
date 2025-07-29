@@ -291,7 +291,31 @@ const Product = () => {
               </span>
             </p>
             <hr className='bg-gray-600 my-6' />
-            {/* Rest of the product details... */}
+            {productData.colors?.length > 0 && (
+              <div className='mt-6'>
+                <p className='text-sm text-gray-700 mb-2'>Choose a Color:</p>
+                <div className='flex gap-3'>
+                  {productData.colors.map((color, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-full cursor-pointer border-2 transition ${
+                        selectedColor === color
+                          ? 'ring-2 ring-offset-2 ring-orange-500'
+                          : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: getColorHex(color) }}
+                      title={color}
+                    ></div>
+                  ))}
+                </div>
+                {selectedColor && (
+                  <p className='text-sm text-gray-600 mt-2'>
+                    Selected Color: <strong>{selectedColor}</strong>
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className='flex items-center mt-10 gap-4'>
               <button
