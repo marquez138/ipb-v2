@@ -48,24 +48,37 @@ const Cart = () => {
 
                   if (!product) return null
 
-                  // --- NEW: Determine which image to show ---
-                  // Prioritize the generated custom image for the product's main view.
-                  // Fall back to the default product image if no customization exists for that view or at all.
-                  const primaryImage =
-                    itemData.customizations?.[product.image[0]] ||
-                    product.image[0]
-
                   return (
                     <tr key={itemKey}>
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-start gap-4'>
-                          <Image
-                            src={primaryImage}
-                            alt={product.name}
-                            className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
-                            width={120}
-                            height={120}
-                          />
+                          {/* --- CORRECTED IMAGE DISPLAY LOGIC --- */}
+                          <div className='flex flex-col gap-2'>
+                            {/* If there are customizations, display them. Otherwise, show the default image. */}
+                            {itemData.customizations ? (
+                              Object.values(itemData.customizations).map(
+                                (imgSrc, idx) => (
+                                  <Image
+                                    key={idx}
+                                    src={imgSrc}
+                                    alt={`Customized view ${idx + 1}`}
+                                    className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
+                                    width={120}
+                                    height={120}
+                                  />
+                                )
+                              )
+                            ) : (
+                              <Image
+                                src={product.image[0]}
+                                alt={product.name}
+                                className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
+                                width={120}
+                                height={120}
+                              />
+                            )}
+                          </div>
+
                           <div>
                             <p className='text-gray-800 font-medium'>
                               {product.name}
@@ -76,38 +89,10 @@ const Cart = () => {
                               </p>
                             )}
 
-                            {/* --- UPDATED: Show if customized, and list all customized sides --- */}
                             {itemData.customizations ? (
-                              <div className='mt-2'>
-                                <p className='text-xs text-gray-600 font-semibold mb-1'>
-                                  Your customized product
-                                </p>
-                                {/* Optional: Show small icons of all customized sides */}
-                                <div className='flex gap-1 mt-1'>
-                                  {Object.keys(itemData.customizations).map(
-                                    (_, idx) => (
-                                      <div
-                                        key={idx}
-                                        className='w-4 h-4 bg-green-200 rounded-full flex items-center justify-center'
-                                      >
-                                        <svg
-                                          className='w-3 h-3 text-green-700'
-                                          fill='none'
-                                          stroke='currentColor'
-                                          viewBox='0 0 24 24'
-                                        >
-                                          <path
-                                            strokeLinecap='round'
-                                            strokeLinejoin='round'
-                                            strokeWidth='2'
-                                            d='M5 13l4 4L19 7'
-                                          ></path>
-                                        </svg>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              </div>
+                              <p className='text-xs text-gray-600 font-semibold mt-2'>
+                                Customized Product
+                              </p>
                             ) : (
                               <p className='text-xs text-gray-500 mt-1'>
                                 Standard Product
