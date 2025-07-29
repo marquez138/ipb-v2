@@ -9,8 +9,6 @@ import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
 import React from 'react'
-import axios from 'axios' // Import axios
-import toast from 'react-hot-toast' // Import react-hot-toast
 
 const getColorHex = (colorName) => {
   const COLOR_MAP = {
@@ -33,12 +31,12 @@ const getColorHex = (colorName) => {
 const Product = () => {
   const { id } = useParams()
 
-  const { products, router, addToCart, user, getToken } = useAppContext() // Add getToken
+  const { products, router, addToCart, user } = useAppContext()
 
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
+
   const [selectedColor, setSelectedColor] = useState('')
-  const [selectedFile, setSelectedFile] = useState(null) // State for the selected file
 
   const fetchProductData = async () => {
     const product = products.find((product) => product._id === id)
@@ -48,46 +46,6 @@ const Product = () => {
   useEffect(() => {
     fetchProductData()
   }, [id, products.length])
-
-  // Handle file input change
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0])
-  }
-
-  // Handle image upload
-  const handleImageUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select an image to upload.')
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('image', selectedFile)
-
-    try {
-      const token = await getToken()
-      const { data } = await axios.post(
-        `/api/product/${id}/upload-image`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      if (data.success) {
-        toast.success('Image uploaded successfully!')
-        setProductData(data.product) // Update product data with the new image
-        setSelectedFile(null) // Reset file input
-      } else {
-        toast.error(data.message)
-      }
-    } catch (error) {
-      toast.error(error.message)
-    }
-  }
 
   return productData ? (
     <>
@@ -121,25 +79,6 @@ const Product = () => {
                   />
                 </div>
               ))}
-            </div>
-            {/* Add Image Upload Form */}
-            <div className='mt-6'>
-              <h3 className='text-lg font-medium text-gray-900'>
-                Upload Your Image
-              </h3>
-              <div className='mt-2 flex items-center'>
-                <input
-                  type='file'
-                  onChange={handleFileChange}
-                  className='block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100'
-                />
-                <button
-                  onClick={handleImageUpload}
-                  className='ml-4 px-4 py-2 bg-orange-600 text-white rounded-md'
-                >
-                  Upload
-                </button>
-              </div>
             </div>
           </div>
 
