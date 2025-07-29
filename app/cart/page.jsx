@@ -5,6 +5,7 @@ import OrderSummary from '@/components/OrderSummary'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
+import CustomizedProductImage from '@/components/CustomizedProductImage' // Import the new component
 
 const Cart = () => {
   const { products, router, cartItems, updateCartQuantity, getCartCount } =
@@ -52,31 +53,16 @@ const Cart = () => {
                     <tr key={itemKey}>
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-start gap-4'>
-                          {/* --- CORRECTED IMAGE DISPLAY LOGIC --- */}
                           <div className='flex flex-col gap-2'>
-                            {/* If there are customizations, display them. Otherwise, show the default image. */}
-                            {itemData.customizations ? (
-                              Object.values(itemData.customizations).map(
-                                (imgSrc, idx) => (
-                                  <Image
-                                    key={idx}
-                                    src={imgSrc}
-                                    alt={`Customized view ${idx + 1}`}
-                                    className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
-                                    width={120}
-                                    height={120}
-                                  />
-                                )
-                              )
-                            ) : (
-                              <Image
-                                src={product.image[0]}
-                                alt={product.name}
+                            {/* --- UPDATED: Use the new component --- */}
+                            {product.image.map((imgSrc, idx) => (
+                              <CustomizedProductImage
+                                key={idx}
+                                baseImageSrc={imgSrc}
+                                overlay={itemData.customizations?.[imgSrc]}
                                 className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
-                                width={120}
-                                height={120}
                               />
-                            )}
+                            ))}
                           </div>
 
                           <div>
@@ -151,17 +137,6 @@ const Cart = () => {
               </tbody>
             </table>
           </div>
-          <button
-            onClick={() => router.push('/all-products')}
-            className='group flex items-center mt-6 gap-2 text-orange-600'
-          >
-            <Image
-              className='group-hover:-translate-x-1 transition'
-              src={assets.arrow_right_icon_colored}
-              alt='arrow_right_icon_colored'
-            />
-            Continue Shopping
-          </button>
         </div>
         <OrderSummary />
       </div>

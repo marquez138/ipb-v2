@@ -4,7 +4,7 @@ import { assets } from '@/assets/assets'
 import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import NextImage from 'next/image' // Renamed import to avoid conflict
+import NextImage from 'next/image'
 import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
@@ -35,12 +35,6 @@ const getColorHex = (colorName) => {
     Red: '#ff0000',
     Blue: '#0000ff',
     Green: '#00ff00',
-    Orange: '#FFA500',
-    Yellow: '#FFFF00',
-    Purple: '#800080',
-    Pink: '#FFC0CB',
-    Gray: '#808080',
-    Brown: '#A52A2A',
   }
   return COLOR_MAP[colorName] || '#cccccc'
 }
@@ -146,76 +140,21 @@ const Product = () => {
     }))
   }
 
-  const generateAndAddToCart = async (buyNow = false) => {
+  // --- SIMPLIFIED: Add customization data directly to cart ---
+  const handleAddToCart = (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
     }
 
-    const toastId = toast.loading('Generating your custom design...')
+    // Pass the raw `customOverlays` object. If it's empty, pass null.
+    const customizations =
+      Object.keys(customOverlays).length > 0 ? customOverlays : null
 
-    try {
-      const finalCustomizations = {}
-      const customizedSides = Object.entries(customOverlays)
+    addToCart(productData._id, selectedColor, customizations)
+    toast.success('Added to cart!')
 
-      if (customizedSides.length === 0) {
-        addToCart(productData._id, selectedColor, null)
-      } else {
-        await Promise.all(
-          customizedSides.map(async ([baseImageUrl, overlay]) => {
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-
-            // FIX: Use window.Image to access the native browser Image constructor
-            const baseImage = new window.Image()
-            baseImage.crossOrigin = 'anonymous'
-            baseImage.src = baseImageUrl
-            await new Promise((resolve, reject) => {
-              baseImage.onload = resolve
-              baseImage.onerror = reject
-            })
-
-            canvas.width = baseImage.naturalWidth
-            canvas.height = baseImage.naturalHeight
-
-            // FIX: Use window.Image here as well
-            const overlayImage = new window.Image()
-            overlayImage.crossOrigin = 'anonymous'
-            overlayImage.src = overlay.src
-            await new Promise((resolve, reject) => {
-              overlayImage.onload = resolve
-              overlayImage.onerror = reject
-            })
-
-            ctx.drawImage(baseImage, 0, 0)
-
-            ctx.save()
-            const centerX = overlay.position.x + overlay.size / 2
-            const centerY = overlay.position.y + overlay.size / 2
-            ctx.translate(centerX, centerY)
-            ctx.rotate((overlay.rotation * Math.PI) / 180)
-            ctx.drawImage(
-              overlayImage,
-              -overlay.size / 2,
-              -overlay.size / 2,
-              overlay.size,
-              overlay.size
-            )
-            ctx.restore()
-
-            finalCustomizations[baseImageUrl] = canvas.toDataURL('image/png')
-          })
-        )
-        addToCart(productData._id, selectedColor, finalCustomizations)
-      }
-
-      toast.success('Added to cart!', { id: toastId })
-
-      if (buyNow) {
-        router.push('/cart')
-      }
-    } catch (error) {
-      console.error('Error generating custom image:', error)
-      toast.error('Could not create custom image.', { id: toastId })
+    if (buyNow) {
+      router.push('/cart')
     }
   }
 
@@ -382,13 +321,13 @@ const Product = () => {
 
             <div className='flex items-center mt-10 gap-4'>
               <button
-                onClick={() => generateAndAddToCart(false)}
+                onClick={() => handleAddToCart(false)}
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
                 Add to Cart
               </button>
               <button
-                onClick={() => generateAndAddToCart(true)}
+                onClick={() => handleAddToCart(true)}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'
               >
                 Buy now
