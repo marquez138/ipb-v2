@@ -5,217 +5,278 @@ import Image from 'next/image'
 import { useAppContext } from '@/context/AppContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import ColorSwatchSelect from '@/components/ColorSwatchSelect'
+import ColorSwatchSelect from '@/components/ColorSwatchSelect' // We can reuse this for color selection
 
 const AddProduct = () => {
   const { getToken } = useAppContext()
 
-  const [files, setFiles] = useState([])
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('Earphone')
-  const [price, setPrice] = useState('')
-  const [offerPrice, setOfferPrice] = useState('')
-  // const [color, setColor] = useState('Black')
+  // --- NEW: Advanced State for Product Data ---
+  const [productData, setProductData] = useState({
+    name: '',
+    description: '',
+    category: 'Apparel',
+    price: '',
+    offerPrice: '',
+    colors: [],
+    imagesByColor: {}, // Stores files: { "Black": [file1, file2], "White": [file3, file4] }
+  })
 
-  const [selectedColors, setSelectedColors] = useState([])
+  const [newColor, setNewColor] = useState('')
 
+  // --- Handlers for Text Inputs ---
+  const handleTextChange = (e) => {
+    const { name, value } = e.target
+    setProductData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // --- Handlers for Color Management ---
+  const handleAddColor = () => {
+    if (newColor && !productData.colors.includes(newColor)) {
+      setProductData((prev) => ({
+        ...prev,
+        colors: [...prev.colors, newColor],
+        imagesByColor: {
+          ...prev.imagesByColor,
+          [newColor]: [null, null, null], // Initialize with placeholders for 3 views
+        },
+      }))
+      setNewColor('')
+    }
+  }
+
+  const handleRemoveColor = (colorToRemove) => {
+    setProductData((prev) => {
+      const newColors = prev.colors.filter((c) => c !== colorToRemove)
+      const newImagesByColor = { ...prev.imagesByColor }
+      delete newImagesByColor[colorToRemove]
+      return { ...prev, colors: newColors, imagesByColor: newImagesByColor }
+    })
+  }
+
+  // --- Handler for Image Uploads ---
+  const handleImageChange = (e, color, viewIndex) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setProductData((prev) => {
+        const updatedImages = [...prev.imagesByColor[color]]
+        updatedImages[viewIndex] = file
+        return {
+          ...prev,
+          imagesByColor: { ...prev.imagesByColor, [color]: updatedImages },
+        }
+      })
+    }
+  }
+
+  // --- Updated Submit Handler ---
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    const formData = new FormData()
-
-    formData.append('name', name)
-    formData.append('description', description)
-    formData.append('category', category)
-    formData.append('price', price)
-    formData.append('offerPrice', offerPrice)
-    // formData.append('color', color)
-
-    for (let i = 0; i < files.length; i++) {
-      formData.append('images', files[i])
-    }
-
-    for (let i = 0; i < selectedColors.length; i++) {
-      formData.append('colors', selectedColors[i]) // ✅ consistent with backend
-    }
+    const toastId = toast.loading('Adding product...')
 
     try {
       const token = await getToken()
+      const formData = new FormData()
+
+      formData.append('name', productData.name)
+      formData.append('description', productData.description)
+      formData.append('category', productData.category)
+      formData.append('price', productData.price)
+      formData.append('offerPrice', productData.offerPrice)
+
+      // Append colors array
+      productData.colors.forEach((color) => {
+        formData.append('colors[]', color)
+      })
+
+      // Append image files with structured keys
+      for (const color of productData.colors) {
+        productData.imagesByColor[color].forEach((file, index) => {
+          if (file) {
+            // Key format: "images_COLOR_INDEX" -> e.g., "images_Black_0"
+            formData.append(`images_${color}_${index}`, file)
+          }
+        })
+      }
 
       const { data } = await axios.post('/api/product/add', formData, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
       if (data.success) {
-        toast.success(data.message)
-        setFiles([])
-        setName('')
-        setDescription('')
-        setCategory('Earphone')
-        setPrice('')
-        setOfferPrice('')
-        // setColor('Black')
-        setSelectedColors([])
+        toast.success('Product added successfully!', { id: toastId })
+        // Reset form state
+        setProductData({
+          name: '',
+          description: '',
+          category: 'Apparel',
+          price: '',
+          offerPrice: '',
+          colors: [],
+          imagesByColor: {},
+        })
       } else {
-        toast.error(data.message)
+        toast.error(data.message, { id: toastId })
       }
     } catch (error) {
-      toast.error(error.message)
+      toast.error('An error occurred.', { id: toastId })
+      console.error(error)
     }
   }
 
   return (
-    <div className='flex-1 min-h-screen flex flex-col justify-between'>
-      <form onSubmit={handleSubmit} className='md:p-10 p-4 space-y-5 max-w-lg'>
-        <div>
-          <p className='text-base font-medium'>Product Image</p>
-          <div className='flex flex-wrap items-center gap-3 mt-2'>
-            {[...Array(4)].map((_, index) => (
-              <label key={index} htmlFor={`image${index}`}>
-                <input
-                  onChange={(e) => {
-                    const updatedFiles = [...files]
-                    updatedFiles[index] = e.target.files[0]
-                    setFiles(updatedFiles)
-                  }}
-                  type='file'
-                  id={`image${index}`}
-                  hidden
-                />
-                <Image
-                  key={index}
-                  className='max-w-24 cursor-pointer'
-                  src={
-                    files[index]
-                      ? URL.createObjectURL(files[index])
-                      : assets.upload_area
-                  }
-                  alt=''
-                  width={100}
-                  height={100}
-                />
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className='flex flex-col gap-1 max-w-md'>
-          <label className='text-base font-medium' htmlFor='product-name'>
-            Product Name
-          </label>
+    <div className='flex-1 min-h-screen'>
+      <form onSubmit={handleSubmit} className='md:p-10 p-4 space-y-6 max-w-2xl'>
+        {/* --- Product Info Fields --- */}
+        <div className='flex flex-col gap-1'>
+          <label className='font-medium'>Product Name</label>
           <input
-            id='product-name'
+            name='name'
+            value={productData.name}
+            onChange={handleTextChange}
             type='text'
             placeholder='Type here'
-            className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
-            onChange={(e) => setName(e.target.value)}
-            value={name}
             required
+            className='input-style'
           />
         </div>
-        <div className='flex flex-col gap-1 max-w-md'>
-          <label
-            className='text-base font-medium'
-            htmlFor='product-description'
-          >
-            Product Description
-          </label>
+        <div className='flex flex-col gap-1'>
+          <label className='font-medium'>Product Description</label>
           <textarea
-            id='product-description'
+            name='description'
+            value={productData.description}
+            onChange={handleTextChange}
             rows={4}
-            className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40 resize-none'
-            placeholder='Type here'
-            onChange={(e) => setDescription(e.target.value)}
-            value={description}
             required
+            className='input-style resize-none'
+            placeholder='Write content here'
           ></textarea>
         </div>
-        <div className='flex items-center gap-5 flex-wrap'>
-          <div className='flex flex-col gap-1 w-32'>
-            <label className='text-base font-medium' htmlFor='category'>
-              Category
-            </label>
+        <div className='flex gap-4'>
+          <div className='flex-1 flex flex-col gap-1'>
+            <label className='font-medium'>Category</label>
             <select
-              id='category'
-              className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
-              onChange={(e) => setCategory(e.target.value)}
-              defaultValue={category}
+              name='category'
+              value={productData.category}
+              onChange={handleTextChange}
+              className='input-style'
             >
-              <option value='Earphone'>Earphone</option>
-              <option value='Headphone'>Headphone</option>
-              <option value='Watch'>Watch</option>
-              <option value='Smartphone'>Smartphone</option>
-              <option value='Laptop'>Laptop</option>
-              <option value='Camera'>Camera</option>
+              <option value='Apparel'>Apparel</option>
               <option value='Accessories'>Accessories</option>
+              <option value='Electronics'>Electronics</option>
             </select>
           </div>
-          <div className='flex flex-col gap-1 w-32'>
-            <label className='text-base font-medium' htmlFor='product-price'>
-              Product Price
-            </label>
+          <div className='flex-1 flex flex-col gap-1'>
+            <label className='font-medium'>Price</label>
             <input
-              id='product-price'
+              name='price'
+              value={productData.price}
+              onChange={handleTextChange}
               type='number'
-              placeholder='0'
-              className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
+              placeholder='$20'
               required
+              className='input-style'
             />
           </div>
-          <div className='flex flex-col gap-1 w-32'>
-            <label className='text-base font-medium' htmlFor='offer-price'>
-              Offer Price
-            </label>
+          <div className='flex-1 flex flex-col gap-1'>
+            <label className='font-medium'>Offer Price</label>
             <input
-              id='offer-price'
+              name='offerPrice'
+              value={productData.offerPrice}
+              onChange={handleTextChange}
               type='number'
-              placeholder='0'
-              className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
-              onChange={(e) => setOfferPrice(e.target.value)}
-              value={offerPrice}
+              placeholder='$15'
               required
+              className='input-style'
             />
           </div>
+        </div>
 
-          <div className='flex flex-col gap-1 w-32'>
-            <label className='text-base font-medium' htmlFor='color'>
-              Color
-            </label>
-            {/* <select
-              id='color'
-              className='outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40'
-              onChange={(e) => setColor(e.target.value)}
-              defaultValue={color}
+        {/* --- Color Management UI --- */}
+        <div>
+          <label className='font-medium'>Product Colors</label>
+          <div className='flex gap-2 mt-2'>
+            <input
+              value={newColor}
+              onChange={(e) => setNewColor(e.target.value)}
+              type='text'
+              placeholder='e.g., Black'
+              className='input-style flex-grow'
+            />
+            <button
+              type='button'
+              onClick={handleAddColor}
+              className='px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300'
             >
-              <option value=''>Select a color</option>
-              <option value='Black'>Black</option>
-              <option value='White'>White</option>
-              <option value='Red'>Red</option>
-              <option value='Blue'>Blue</option>
-              <option value='Green'>Green</option>
-            </select> */}
-
-            <ColorSwatchSelect
-              selectedColors={selectedColors}
-              setSelectedColors={setSelectedColors}
-            />
-
-            {selectedColors.map((color, index) => (
-              <input key={index} type='hidden' name='colors' value={color} />
+              Add Color
+            </button>
+          </div>
+          <div className='flex flex-wrap gap-2 mt-2'>
+            {productData.colors.map((color) => (
+              <div
+                key={color}
+                className='flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full'
+              >
+                <span>{color}</span>
+                <button
+                  type='button'
+                  onClick={() => handleRemoveColor(color)}
+                  className='text-red-500 font-bold'
+                >
+                  x
+                </button>
+              </div>
             ))}
           </div>
+        </div>
+
+        {/* --- Dynamic Image Upload UI --- */}
+        <div className='space-y-4'>
+          {productData.colors.map((color) => (
+            <div key={color}>
+              <h3 className='font-semibold text-lg'>{color} Images</h3>
+              <p className='text-sm text-gray-500'>
+                Add up to 3 views (e.g., Front, Back, Sleeve).
+              </p>
+              <div className='flex flex-wrap items-center gap-3 mt-2'>
+                {[...Array(3)].map((_, viewIndex) => (
+                  <label
+                    key={viewIndex}
+                    htmlFor={`${color}-${viewIndex}`}
+                    className='cursor-pointer'
+                  >
+                    <input
+                      onChange={(e) => handleImageChange(e, color, viewIndex)}
+                      type='file'
+                      id={`${color}-${viewIndex}`}
+                      hidden
+                    />
+                    <Image
+                      className='w-28 h-28 object-cover border-2 border-dashed rounded-md p-1'
+                      src={
+                        productData.imagesByColor[color]?.[viewIndex]
+                          ? URL.createObjectURL(
+                              productData.imagesByColor[color][viewIndex]
+                            )
+                          : assets.upload_area
+                      }
+                      alt={`${color} view ${viewIndex + 1}`}
+                      width={112}
+                      height={112}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <button
           type='submit'
           className='px-8 py-2.5 bg-orange-600 text-white font-medium rounded'
         >
-          ADD
+          ADD PRODUCT
         </button>
       </form>
-      {/* <Footer /> */}
     </div>
   )
 }

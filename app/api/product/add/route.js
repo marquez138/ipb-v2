@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/config/db'
 import Product from '@/models/Product'
 
-// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -17,9 +16,8 @@ export async function POST(request) {
     const { userId } = getAuth(request)
 
     const isSeller = await authSeller(userId)
-
     if (!isSeller) {
-      return NextResponse.json({ success: false, message: 'not authorized' })
+      return NextResponse.json({ success: false, message: 'Not authorized' })
     }
 
     const formData = await request.formData()
@@ -29,48 +27,39 @@ export async function POST(request) {
     const category = formData.get('category')
     const price = formData.get('price')
     const offerPrice = formData.get('offerPrice')
-    // const color = formData.get('color')
-    const colors = formData.getAll('colors') // Array of strings
+    const colors = formData.getAll('colors[]') // Get array of colors
 
-    const files = formData.getAll('images')
+    const imagesByColor = {}
 
-    if (!files || files.length === 0) {
-      return NextResponse.json({ success: false, message: 'no files uploaded' })
-    }
+    // --- NEW: Process and upload images for each color ---
+    for (const color of colors) {
+      imagesByColor[color] = []
+      for (let i = 0; i < 3; i++) {
+        // Assuming max 3 views
+        const file = formData.get(`images_${color}_${i}`)
+        if (file) {
+          const arrayBuffer = await file.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
 
-    // if (!color) {
-    //   return NextResponse.json({ success: false, message: 'Color is required' })
-    // }
-
-    if (!colors || colors.length === 0) {
-      return NextResponse.json({
-        success: false,
-        message: 'At least one color is required',
-      })
-    }
-
-    const result = await Promise.all(
-      files.map(async (file) => {
-        const arrayBuffer = await file.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
-
-        return new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { resource_type: 'auto' },
-            (error, result) => {
-              if (error) {
-                reject(error)
-              } else {
-                resolve(result)
+          const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { resource_type: 'auto' },
+              (error, result) => {
+                if (error) reject(error)
+                else resolve(result)
               }
-            }
-          )
-          stream.end(buffer)
-        })
-      })
-    )
+            )
+            stream.end(buffer)
+          })
 
-    const image = result.map((result) => result.secure_url)
+          imagesByColor[color][i] = result.secure_url
+        } else {
+          imagesByColor[color][i] = null // Keep placeholder if no image was uploaded
+        }
+      }
+      // Filter out null values if you don't want to store placeholders
+      imagesByColor[color] = imagesByColor[color].filter((url) => url !== null)
+    }
 
     await connectDB()
     const newProduct = await Product.create({
@@ -80,18 +69,18 @@ export async function POST(request) {
       category,
       price: Number(price),
       offerPrice: Number(offerPrice),
-      image,
-      //   color, // new field
-      colors, // array of color names
+      colors,
+      imagesByColor, // Save the new structured object
       date: Date.now(),
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Upload successful',
+      message: 'Product added successfully',
       newProduct,
     })
   } catch (error) {
-    NextResponse.json({ success: false, message: error.message })
+    console.error('Error in /api/product/add:', error)
+    return NextResponse.json({ success: false, message: error.message })
   }
 }

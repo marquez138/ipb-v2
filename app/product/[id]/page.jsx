@@ -47,6 +47,11 @@ const Product = () => {
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
   const [selectedColor, setSelectedColor] = useState('')
+
+  // --- NEW STATE to manage images by color ---
+  const [imagesByColor, setImagesByColor] = useState({})
+  const [currentColorImages, setCurrentColorImages] = useState([])
+
   const [customOverlays, setCustomOverlays] = useState({})
   const fileInputRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -56,14 +61,41 @@ const Product = () => {
   const fetchProductData = useCallback(() => {
     const product = products.find((product) => product._id === id)
     setProductData(product)
-    if (product && product.image.length > 0) {
-      setMainImage(product.image[0])
+
+    if (product) {
+      // --- NEW: Map images to colors ---
+      // This assumes a structure where you have multiple views per color.
+      // For this example, we'll simulate it by assuming each image in the array
+      // corresponds to a color in the `colors` array.
+      const mappedImages = {}
+      product.colors.forEach((color, index) => {
+        // This logic assumes you have one primary image per color.
+        // If you have multiple views (front, back) per color,
+        // you would need to adjust your data structure and this logic.
+        // For now, let's say each color has just its primary image.
+        mappedImages[color] = [product.image[index]] // Storing as an array for consistency
+      })
+      setImagesByColor(mappedImages)
+
+      // Set the initial color and images
+      const initialColor = product.colors[0]
+      setSelectedColor(initialColor)
+      setCurrentColorImages(mappedImages[initialColor] || [])
+      setMainImage(mappedImages[initialColor]?.[0] || null)
     }
   }, [id, products])
 
   useEffect(() => {
     fetchProductData()
   }, [fetchProductData])
+
+  // --- NEW: Handler for selecting a color ---
+  const handleColorSelect = (color) => {
+    setSelectedColor(color)
+    const newImages = imagesByColor[color] || []
+    setCurrentColorImages(newImages)
+    setMainImage(newImages[0] || null) // Set main image to the first view of the new color
+  }
 
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -198,13 +230,12 @@ const Product = () => {
               onMouseLeave={handleMouseUp}
             >
               <NextImage
-                src={mainImage || productData.image[0]}
+                src={mainImage || assets.upload_area} // Fallback to a placeholder
                 alt='alt'
                 className='w-full h-auto object-cover mix-blend-multiply'
                 width={1280}
                 height={720}
               />
-
               {!customOverlays[mainImage] ? (
                 <div
                   className='absolute inset-0 m-auto w-3/4 h-3/4 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-400/10'
@@ -286,8 +317,9 @@ const Product = () => {
               accept='image/*'
             />
 
+            {/* --- UPDATED: Thumbnails now render from currentColorImages --- */}
             <div className='grid grid-cols-4 gap-4 mt-4'>
-              {productData.image.map((image, index) => (
+              {currentColorImages.map((image, index) => (
                 <div
                   key={index}
                   onClick={() => setMainImage(image)}
@@ -319,6 +351,8 @@ const Product = () => {
               </span>
             </p>
             <hr className='bg-gray-600 my-6' />
+
+            {/* --- UPDATED: Color selection logic --- */}
             {productData.colors?.length > 0 && (
               <div className='mt-6'>
                 <p className='text-sm text-gray-700 mb-2'>Choose a Color:</p>
@@ -326,7 +360,7 @@ const Product = () => {
                   {productData.colors.map((color, index) => (
                     <div
                       key={index}
-                      onClick={() => setSelectedColor(color)}
+                      onClick={() => handleColorSelect(color)} // Use new handler
                       className={`w-8 h-8 rounded-full cursor-pointer border-2 transition ${
                         selectedColor === color
                           ? 'ring-2 ring-offset-2 ring-orange-500'
@@ -344,6 +378,7 @@ const Product = () => {
                 )}
               </div>
             )}
+
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => handleAddToCart(false)}
