@@ -81,8 +81,10 @@ const Orders = () => {
                             {order.items
                               .map(
                                 (item) =>
-                                  `${item.product.name} ${
-                                    item.customImage ? '(Customized)' : ''
+                                  `${item.product.name}${
+                                    item.color ? ` (${item.color})` : ''
+                                  }${
+                                    item.customImage ? ' (Customized)' : ''
                                   } x ${item.quantity}`
                               )
                               .join(', ')}
