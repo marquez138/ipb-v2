@@ -112,6 +112,67 @@ const Product = () => {
     e.target.value = null
   }
 
+  // ...(The rest of your handler functions and JSX remain exactly the same)...
+  const handleDesignAreaClick = () => {
+    fileInputRef.current.click()
+  }
+
+  const handleDeleteOverlay = (e) => {
+    e.stopPropagation()
+    const newOverlays = { ...customOverlays }
+    delete newOverlays[mainImage]
+    setCustomOverlays(newOverlays)
+  }
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation()
+    setIsDragging(true)
+    const overlayState = customOverlays[mainImage]
+    setDragStart({
+      x: e.clientX - overlayState.position.x,
+      y: e.clientY - overlayState.position.y,
+    })
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return
+    const containerRect = mainImageContainerRef.current.getBoundingClientRect()
+    const newX = e.clientX - dragStart.x
+    const newY = e.clientY - dragStart.y
+
+    const overlay = customOverlays[mainImage]
+    const clampedX = Math.max(
+      0,
+      Math.min(newX, containerRect.width - overlay.size)
+    )
+    const clampedY = Math.max(
+      0,
+      Math.min(newY, containerRect.height - overlay.size)
+    )
+
+    setCustomOverlays((prev) => ({
+      ...prev,
+      [mainImage]: {
+        ...prev[mainImage],
+        position: { x: clampedX, y: clampedY },
+      },
+    }))
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleControlChange = (property, value) => {
+    setCustomOverlays((prev) => ({
+      ...prev,
+      [mainImage]: {
+        ...prev[mainImage],
+        [property]: parseInt(value, 10),
+      },
+    }))
+  }
+
   const handleAddToCart = (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
@@ -156,6 +217,9 @@ const Product = () => {
             <div
               ref={mainImageContainerRef}
               className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4'
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
             >
               <NextImage
                 src={mainImage || assets.upload_area}
