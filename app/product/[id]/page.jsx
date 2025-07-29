@@ -4,7 +4,7 @@ import { assets } from '@/assets/assets'
 import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import Image from 'next/image'
+import NextImage from 'next/image' // Renamed import to avoid conflict
 import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
@@ -146,7 +146,6 @@ const Product = () => {
     }))
   }
 
-  // --- NEW: Generate final customized images using Canvas ---
   const generateAndAddToCart = async (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
@@ -156,12 +155,9 @@ const Product = () => {
 
     try {
       const finalCustomizations = {}
-
-      // Process only the images that have an overlay
       const customizedSides = Object.entries(customOverlays)
 
       if (customizedSides.length === 0) {
-        // If no customizations, add the plain product to the cart
         addToCart(productData._id, selectedColor, null)
       } else {
         await Promise.all(
@@ -169,8 +165,8 @@ const Product = () => {
             const canvas = document.createElement('canvas')
             const ctx = canvas.getContext('2d')
 
-            // Load base product image
-            const baseImage = new Image()
+            // FIX: Use window.Image to access the native browser Image constructor
+            const baseImage = new window.Image()
             baseImage.crossOrigin = 'anonymous'
             baseImage.src = baseImageUrl
             await new Promise((resolve, reject) => {
@@ -181,8 +177,8 @@ const Product = () => {
             canvas.width = baseImage.naturalWidth
             canvas.height = baseImage.naturalHeight
 
-            // Load user's overlay image
-            const overlayImage = new Image()
+            // FIX: Use window.Image here as well
+            const overlayImage = new window.Image()
             overlayImage.crossOrigin = 'anonymous'
             overlayImage.src = overlay.src
             await new Promise((resolve, reject) => {
@@ -190,10 +186,8 @@ const Product = () => {
               overlayImage.onerror = reject
             })
 
-            // Draw base image
             ctx.drawImage(baseImage, 0, 0)
 
-            // Apply transformations and draw overlay
             ctx.save()
             const centerX = overlay.position.x + overlay.size / 2
             const centerY = overlay.position.y + overlay.size / 2
@@ -211,7 +205,6 @@ const Product = () => {
             finalCustomizations[baseImageUrl] = canvas.toDataURL('image/png')
           })
         )
-        // Add the generated images to the cart
         addToCart(productData._id, selectedColor, finalCustomizations)
       }
 
@@ -239,7 +232,7 @@ const Product = () => {
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
             >
-              <Image
+              <NextImage // Use the renamed import for the component
                 src={mainImage || productData.image[0]}
                 alt='alt'
                 className='w-full h-auto object-cover mix-blend-multiply'
@@ -268,7 +261,7 @@ const Product = () => {
                   }}
                   onMouseDown={handleMouseDown}
                 >
-                  <Image
+                  <NextImage // Use the renamed import here too
                     src={customOverlays[mainImage].src}
                     alt='custom overlay'
                     width={customOverlays[mainImage].size}
@@ -337,7 +330,7 @@ const Product = () => {
                     mainImage === image ? 'ring-2 ring-orange-500' : ''
                   }`}
                 >
-                  <Image
+                  <NextImage // And here
                     src={image}
                     alt='alt'
                     className='w-full h-auto object-cover mix-blend-multiply'
@@ -386,6 +379,7 @@ const Product = () => {
                 )}
               </div>
             )}
+
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => generateAndAddToCart(false)}
@@ -403,7 +397,7 @@ const Product = () => {
           </div>
         </div>
         <div className='flex flex-col items-center'>
-          {/* Featured Products */}
+          {/* ... Featured Products ... */}
         </div>
       </div>
       <Footer />
