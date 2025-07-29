@@ -8,7 +8,7 @@ const CustomizedProductImage = ({ baseImageSrc, overlay, className }) => {
   useEffect(() => {
     const renderCanvas = async () => {
       const canvas = canvasRef.current
-      if (!canvas || !overlay?.src) return
+      if (!canvas) return // Exit if canvas is not ready
 
       const ctx = canvas.getContext('2d')
 
@@ -24,51 +24,46 @@ const CustomizedProductImage = ({ baseImageSrc, overlay, className }) => {
       canvas.width = baseImage.naturalWidth
       canvas.height = baseImage.naturalHeight
 
-      // Load user's overlay image
-      const overlayImage = new window.Image()
-      overlayImage.crossOrigin = 'anonymous'
-      overlayImage.src = overlay.src
-      await new Promise((resolve, reject) => {
-        overlayImage.onload = resolve
-        overlayImage.onerror = reject
-      })
-
-      // Draw base image
+      // Always draw the base image first
       ctx.drawImage(baseImage, 0, 0)
 
-      // Apply transformations and draw overlay
-      ctx.save()
-      const centerX = overlay.position.x + overlay.size / 2
-      const centerY = overlay.position.y + overlay.size / 2
-      ctx.translate(centerX, centerY)
-      ctx.rotate((overlay.rotation * Math.PI) / 180)
-      ctx.drawImage(
-        overlayImage,
-        -overlay.size / 2,
-        -overlay.size / 2,
-        overlay.size,
-        overlay.size
-      )
-      ctx.restore()
+      // If there's an overlay, draw it on top
+      if (overlay?.src) {
+        // Load user's overlay image
+        const overlayImage = new window.Image()
+        overlayImage.crossOrigin = 'anonymous'
+        overlayImage.src = overlay.src
+        await new Promise((resolve, reject) => {
+          overlayImage.onload = resolve
+          overlayImage.onerror = reject
+        })
+
+        // --- NEW: Convert Ratios back to Absolute Pixels for this Canvas ---
+        const absoluteX = overlay.xRatio * canvas.width
+        const absoluteY = overlay.yRatio * canvas.height
+        const absoluteSize = overlay.sizeRatio * canvas.width
+
+        // Apply transformations and draw overlay using the calculated absolute values
+        ctx.save()
+        const centerX = absoluteX + absoluteSize / 2
+        const centerY = absoluteY + absoluteSize / 2
+        ctx.translate(centerX, centerY)
+        ctx.rotate((overlay.rotation * Math.PI) / 180)
+        ctx.drawImage(
+          overlayImage,
+          -absoluteSize / 2,
+          -absoluteSize / 2,
+          absoluteSize,
+          absoluteSize
+        )
+        ctx.restore()
+      }
     }
 
     renderCanvas().catch(console.error)
   }, [baseImageSrc, overlay])
 
-  // If there's no customization for this side, just show the base image
-  if (!overlay?.src) {
-    return (
-      <Image
-        src={baseImageSrc}
-        alt='Product image'
-        className={className}
-        width={120}
-        height={120}
-      />
-    )
-  }
-
-  // Otherwise, render the canvas
+  // Render a canvas that will be drawn into by the useEffect hook
   return <canvas ref={canvasRef} className={className} />
 }
 

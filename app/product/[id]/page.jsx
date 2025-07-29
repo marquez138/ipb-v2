@@ -150,13 +150,33 @@ const Product = () => {
     }))
   }
 
+  // --- UPDATED: Convert to Ratios Before Adding to Cart ---
   const handleAddToCart = (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
     }
 
+    const containerRect = mainImageContainerRef.current.getBoundingClientRect()
+    const { width: containerWidth, height: containerHeight } = containerRect
+
+    const customizationsWithRatios = {}
+
+    // Convert absolute pixel values to ratios
+    for (const [baseImageUrl, overlay] of Object.entries(customOverlays)) {
+      customizationsWithRatios[baseImageUrl] = {
+        src: overlay.src,
+        rotation: overlay.rotation,
+        // Ratios are calculated against the container's dimensions
+        xRatio: overlay.position.x / containerWidth,
+        yRatio: overlay.position.y / containerHeight,
+        sizeRatio: overlay.size / containerWidth, // Assuming size is proportional to width
+      }
+    }
+
     const customizations =
-      Object.keys(customOverlays).length > 0 ? customOverlays : null
+      Object.keys(customizationsWithRatios).length > 0
+        ? customizationsWithRatios
+        : null
 
     addToCart(productData._id, selectedColor, customizations)
     toast.success('Added to cart!')
