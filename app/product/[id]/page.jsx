@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react' // 1. Import useCallback
 import { assets } from '@/assets/assets'
 import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
@@ -11,6 +11,7 @@ import { useAppContext } from '@/context/AppContext'
 import React from 'react'
 import toast from 'react-hot-toast'
 
+// ...(UploadIcon and getColorHex helpers remain the same)...
 const UploadIcon = () => (
   <svg
     className='w-8 h-8 text-gray-400'
@@ -46,40 +47,49 @@ const Product = () => {
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
   const [selectedColor, setSelectedColor] = useState('')
-
   const [customOverlays, setCustomOverlays] = useState({})
   const fileInputRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const mainImageContainerRef = useRef(null)
 
-  const fetchProductData = async () => {
+  // 2. Wrap fetchProductData in useCallback
+  const fetchProductData = useCallback(() => {
     const product = products.find((product) => product._id === id)
     setProductData(product)
     if (product && product.image.length > 0) {
       setMainImage(product.image[0])
     }
-  }
+  }, [id, products]) // Dependencies for useCallback
 
+  // 3. Add the memoized function to the useEffect dependency array
   useEffect(() => {
     fetchProductData()
-  }, [id, products.length])
+  }, [fetchProductData])
 
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
-      setCustomOverlays((prev) => ({
-        ...prev,
-        [mainImage]: {
-          src: URL.createObjectURL(file),
-          position: { x: 50, y: 50 },
-          size: 150,
-          rotation: 0,
-        },
-      }))
+      const reader = new FileReader()
+
+      reader.onload = (event) => {
+        const dataUrl = event.target.result
+        setCustomOverlays((prev) => ({
+          ...prev,
+          [mainImage]: {
+            src: dataUrl,
+            position: { x: 50, y: 50 },
+            size: 150,
+            rotation: 0,
+          },
+        }))
+      }
+
+      reader.readAsDataURL(file)
     }
   }
 
+  // ...(The rest of your handler functions and JSX remain exactly the same)...
   const handleDesignAreaClick = () => {
     fileInputRef.current.click()
   }
@@ -140,13 +150,11 @@ const Product = () => {
     }))
   }
 
-  // --- SIMPLIFIED: Add customization data directly to cart ---
   const handleAddToCart = (buyNow = false) => {
     if (!user) {
       return toast('Please login to add items to your cart.', { icon: '⚠️' })
     }
 
-    // Pass the raw `customOverlays` object. If it's empty, pass null.
     const customizations =
       Object.keys(customOverlays).length > 0 ? customOverlays : null
 
@@ -171,7 +179,7 @@ const Product = () => {
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
             >
-              <NextImage // Use the renamed import for the component
+              <NextImage
                 src={mainImage || productData.image[0]}
                 alt='alt'
                 className='w-full h-auto object-cover mix-blend-multiply'
@@ -200,7 +208,7 @@ const Product = () => {
                   }}
                   onMouseDown={handleMouseDown}
                 >
-                  <NextImage // Use the renamed import here too
+                  <NextImage
                     src={customOverlays[mainImage].src}
                     alt='custom overlay'
                     width={customOverlays[mainImage].size}
@@ -269,7 +277,7 @@ const Product = () => {
                     mainImage === image ? 'ring-2 ring-orange-500' : ''
                   }`}
                 >
-                  <NextImage // And here
+                  <NextImage
                     src={image}
                     alt='alt'
                     className='w-full h-auto object-cover mix-blend-multiply'
