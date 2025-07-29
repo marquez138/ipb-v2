@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { assets } from '@/assets/assets'
 import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
@@ -23,25 +23,29 @@ const getColorHex = (colorName) => {
     Pink: '#FFC0CB',
     Gray: '#808080',
     Brown: '#A52A2A',
-    // add more as needed
   }
-  return COLOR_MAP[colorName] || '#cccccc' // fallback to gray if not found
+  return COLOR_MAP[colorName] || '#cccccc'
 }
 
 const Product = () => {
   const { id } = useParams()
-
   const { products, router, addToCart, user } = useAppContext()
 
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
   const [customImage, setCustomImage] = useState(null)
-
   const [selectedColor, setSelectedColor] = useState('')
+
+  // New state to store overlays for each product image view
+  const [customOverlays, setCustomOverlays] = useState({})
+  const fileInputRef = useRef(null)
 
   const fetchProductData = async () => {
     const product = products.find((product) => product._id === id)
     setProductData(product)
+    if (product && product.image.length > 0) {
+      setMainImage(product.image[0])
+    }
   }
 
   useEffect(() => {
@@ -50,8 +54,18 @@ const Product = () => {
 
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setCustomImage(e.target.files[0])
+      const file = e.target.files[0]
+      setCustomImage(file)
+      // Store the uploaded image against the current main image (acting as a key)
+      setCustomOverlays((prev) => ({
+        ...prev,
+        [mainImage]: URL.createObjectURL(file),
+      }))
     }
+  }
+
+  const handleMainImageClick = () => {
+    fileInputRef.current.click()
   }
 
   return productData ? (
@@ -60,7 +74,10 @@ const Product = () => {
       <div className='px-6 md:px-16 lg:px-32 pt-14 space-y-10'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-16'>
           <div className='px-5 lg:px-16 xl:px-20'>
-            <div className='rounded-lg overflow-hidden bg-gray-500/10 mb-4'>
+            <div
+              className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4 cursor-pointer'
+              onClick={handleMainImageClick}
+            >
               <Image
                 src={mainImage || productData.image[0]}
                 alt='alt'
@@ -68,7 +85,25 @@ const Product = () => {
                 width={1280}
                 height={720}
               />
+              {customOverlays[mainImage] && (
+                <div className='absolute inset-0 flex items-center justify-center'>
+                  <Image
+                    src={customOverlays[mainImage]}
+                    alt='custom overlay'
+                    layout='fill'
+                    objectFit='contain'
+                    className='p-4'
+                  />
+                </div>
+              )}
             </div>
+            <input
+              type='file'
+              ref={fileInputRef}
+              onChange={handleCustomImageChange}
+              style={{ display: 'none' }}
+              accept='image/*'
+            />
 
             <div className='grid grid-cols-4 gap-4'>
               {productData.image.map((image, index) => (
@@ -161,11 +196,9 @@ const Product = () => {
               <p className='text-sm text-gray-700 mb-2'>
                 Customize with your own image:
               </p>
-              <input
-                type='file'
-                onChange={handleCustomImageChange}
-                className='text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100'
-              />
+              <p className='text-sm text-gray-600 mt-2'>
+                Click on the main image to upload a design for the current view.
+              </p>
               {customImage && (
                 <p className='text-sm text-gray-600 mt-2'>
                   Selected file: <strong>{customImage.name}</strong>
