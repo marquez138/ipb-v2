@@ -49,8 +49,8 @@ const Cart = () => {
               </thead>
               <tbody>
                 {Object.keys(cartItems).map((itemId) => {
-                  // const product = products.find(product => product._id === itemId);
-                  const [productId, selectedColor] = itemId.split('|')
+                  const [productId, selectedColor, customImage] =
+                    itemId.split('|')
                   const product = products.find(
                     (product) => product._id === productId
                   )
@@ -63,9 +63,9 @@ const Cart = () => {
                         <div>
                           <div className='rounded-lg overflow-hidden bg-gray-500/10 p-2'>
                             <Image
-                              src={product.image[0]}
+                              src={customImage || product.image[0]}
                               alt={product.name}
-                              className='w-16 h-auto object-cover mix-blend-multiply'
+                              className='w-16 h-auto object-cover'
                               width={1280}
                               height={720}
                             />
@@ -82,6 +82,11 @@ const Cart = () => {
                           {selectedColor && (
                             <p className='text-xs text-gray-500 mt-1'>
                               Color: {selectedColor}
+                            </p>
+                          )}
+                          {customImage && (
+                            <p className='text-xs text-gray-500 mt-1'>
+                              Customized
                             </p>
                           )}
                           <button
@@ -117,7 +122,9 @@ const Cart = () => {
                             className='w-8 border text-center appearance-none'
                           ></input>
                           <button
-                            onClick={() => addToCart(productId, selectedColor)}
+                            onClick={() =>
+                              addToCart(productId, selectedColor, customImage)
+                            }
                           >
                             <Image
                               src={assets.increase_arrow}

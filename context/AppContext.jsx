@@ -60,41 +60,36 @@ export const AppContextProvider = (props) => {
     }
   }
 
-  // const addToCart = async (itemId) => {
-  //   if (!user) {
-  //     return toast('Please login', {
-  //       icon: '⚠️',
-  //     })
-  //   }
-
-  //   let cartData = structuredClone(cartItems)
-  //   if (cartData[itemId]) {
-  //     cartData[itemId] += 1
-  //   } else {
-  //     cartData[itemId] = 1
-  //   }
-  //   setCartItems(cartData)
-  //   if (user) {
-  //     try {
-  //       const token = await getToken()
-  //       await axios.post(
-  //         '/api/cart/update',
-  //         { cartData },
-  //         { headers: { Authorization: `Bearer ${token}` } }
-  //       )
-  //       toast.success('Item added to cart')
-  //     } catch (error) {
-  //       toast.error(error.message)
-  //     }
-  //   }
-  // }
-
-  const addToCart = async (itemId, color = '') => {
+  const addToCart = async (itemId, color = '', customImage = null) => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
-    const key = color ? `${itemId}|${color}` : itemId
+    let imageUrl = ''
+    if (customImage) {
+      const formData = new FormData()
+      formData.append('image', customImage)
+      try {
+        const token = await getToken()
+        const { data } = await axios.post('/api/image/upload', formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        })
+        if (data.success) {
+          imageUrl = data.imageUrl
+        } else {
+          toast.error('Image upload failed')
+          return
+        }
+      } catch (error) {
+        toast.error('Image upload failed')
+        return
+      }
+    }
+
+    const key = `${itemId}|${color}|${imageUrl}`
 
     let cartData = structuredClone(cartItems)
     if (cartData[key]) {
@@ -143,30 +138,9 @@ export const AppContextProvider = (props) => {
     }
   }
 
-  // const getCartCount = () => {
-  //   let totalCount = 0
-  //   for (const items in cartItems) {
-  //     if (cartItems[items] > 0) {
-  //       totalCount += cartItems[items]
-  //     }
-  //   }
-  //   return totalCount
-  // }
-
   const getCartCount = () => {
     return Object.values(cartItems).reduce((sum, count) => sum + count, 0)
   }
-
-  // const getCartAmount = () => {
-  //   let totalAmount = 0
-  //   for (const items in cartItems) {
-  //     let itemInfo = products.find((product) => product._id === items)
-  //     if (cartItems[items] > 0) {
-  //       totalAmount += itemInfo.offerPrice * cartItems[items]
-  //     }
-  //   }
-  //   return Math.floor(totalAmount * 100) / 100
-  // }
 
   const getCartAmount = () => {
     let totalAmount = 0

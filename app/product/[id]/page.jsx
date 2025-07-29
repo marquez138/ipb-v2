@@ -35,6 +35,7 @@ const Product = () => {
 
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
+  const [customImage, setCustomImage] = useState(null)
 
   const [selectedColor, setSelectedColor] = useState('')
 
@@ -46,6 +47,12 @@ const Product = () => {
   useEffect(() => {
     fetchProductData()
   }, [id, products.length])
+
+  const handleCustomImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setCustomImage(e.target.files[0])
+    }
+  }
 
   return productData ? (
     <>
@@ -150,6 +157,21 @@ const Product = () => {
                 )}
               </div>
             )}
+            <div className='my-6'>
+              <p className='text-sm text-gray-700 mb-2'>
+                Customize with your own image:
+              </p>
+              <input
+                type='file'
+                onChange={handleCustomImageChange}
+                className='text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100'
+              />
+              {customImage && (
+                <p className='text-sm text-gray-600 mt-2'>
+                  Selected file: <strong>{customImage.name}</strong>
+                </p>
+              )}
+            </div>
 
             <div className='overflow-x-auto'>
               <table className='table-auto border-collapse w-full max-w-72'>
@@ -172,14 +194,16 @@ const Product = () => {
 
             <div className='flex items-center mt-10 gap-4'>
               <button
-                onClick={() => addToCart(productData._id, selectedColor)}
+                onClick={() =>
+                  addToCart(productData._id, selectedColor, customImage)
+                }
                 className='w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition'
               >
                 Add to Cart
               </button>
               <button
                 onClick={() => {
-                  addToCart(productData._id, selectedColor)
+                  addToCart(productData._id, selectedColor, customImage)
                   router.push(user ? '/cart' : '')
                 }}
                 className='w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition'
