@@ -5,7 +5,7 @@ import OrderSummary from '@/components/OrderSummary'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
-import CustomizedProductImage from '@/components/CustomizedProductImage' // Make sure this is imported
+import CustomizedProductImage from '@/components/CustomizedProductImage'
 
 const Cart = () => {
   const { products, router, cartItems, updateCartQuantity, getCartCount } =
@@ -49,27 +49,26 @@ const Cart = () => {
 
                   if (!product) return null
 
-                  // Get the image views for the selected color
-                  const productImages =
-                    product.imagesByColor?.[selectedColor] ||
-                    product.colors.length > 0
-                      ? product.imagesByColor[product.colors[0]]
-                      : []
+                  // --- FIX: Get the correct image array for the SELECTED color ---
+                  const productImagesForSelectedColor =
+                    product.imagesByColor?.[selectedColor] || []
 
                   return (
                     <tr key={itemKey}>
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-start gap-4'>
                           <div className='flex flex-col gap-2'>
-                            {/* Display all views for the selected color, customized or not */}
-                            {productImages.map((imgSrc, idx) => (
-                              <CustomizedProductImage
-                                key={idx}
-                                baseImageSrc={imgSrc}
-                                overlay={itemData.customizations?.[imgSrc]}
-                                className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
-                              />
-                            ))}
+                            {/* Now, we map over only the images for the chosen color */}
+                            {productImagesForSelectedColor.map(
+                              (imgSrc, idx) => (
+                                <CustomizedProductImage
+                                  key={idx}
+                                  baseImageSrc={imgSrc}
+                                  overlay={itemData.customizations?.[imgSrc]}
+                                  className='w-24 h-24 object-contain bg-gray-100 rounded-lg p-1'
+                                />
+                              )
+                            )}
                           </div>
 
                           <div>
