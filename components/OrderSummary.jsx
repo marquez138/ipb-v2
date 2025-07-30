@@ -44,24 +44,27 @@ const OrderSummary = () => {
     setIsDropdownOpen(false)
   }
 
+  // --- UPDATED: createOrder function ---
   const createOrder = async () => {
     try {
       if (!user) {
-        return toast('Please login to place order', {
-          icon: '⚠️',
-        })
+        return toast('Please login to place order', { icon: '⚠️' })
       }
-
       if (!selectedAddress) {
         return toast.error('Please select an address')
       }
 
-      let cartItemsArray = Object.keys(cartItems).map((key) => {
-        const [product, color, customImage] = key.split('|')
-        return { product, quantity: cartItems[key], color, customImage }
+      // CORRECTED LOGIC: Properly parse the new cartItems structure
+      const cartItemsArray = Object.entries(cartItems).map(([key, value]) => {
+        const [product, color] = key.split('|')
+        return {
+          product,
+          quantity: value.quantity,
+          color,
+          // Send the entire customizations object
+          customizations: value.customizations,
+        }
       })
-
-      cartItemsArray = cartItemsArray.filter((item) => item.quantity > 0)
 
       if (cartItemsArray.length === 0) {
         return toast.error('Cart is empty')
@@ -99,6 +102,7 @@ const OrderSummary = () => {
   }, [user])
 
   return (
+    // The JSX for this component remains the same
     <div className='w-full md:w-96 bg-gray-500/5 p-5'>
       <h2 className='text-xl md:text-2xl font-medium text-gray-700'>
         Order Summary
