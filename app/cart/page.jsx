@@ -5,7 +5,7 @@ import OrderSummary from '@/components/OrderSummary'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
-import CustomizedProductImage from '@/components/CustomizedProductImage' // Import the new component
+import CustomizedProductImage from '@/components/CustomizedProductImage' // Make sure this is imported
 
 const Cart = () => {
   const { products, router, cartItems, updateCartQuantity, getCartCount } =
@@ -49,13 +49,20 @@ const Cart = () => {
 
                   if (!product) return null
 
+                  // Get the image views for the selected color
+                  const productImages =
+                    product.imagesByColor?.[selectedColor] ||
+                    product.colors.length > 0
+                      ? product.imagesByColor[product.colors[0]]
+                      : []
+
                   return (
                     <tr key={itemKey}>
                       <td className='py-4 md:px-4 px-1'>
                         <div className='flex items-start gap-4'>
                           <div className='flex flex-col gap-2'>
-                            {/* --- UPDATED: Use the new component --- */}
-                            {product.image.map((imgSrc, idx) => (
+                            {/* Display all views for the selected color, customized or not */}
+                            {productImages.map((imgSrc, idx) => (
                               <CustomizedProductImage
                                 key={idx}
                                 baseImageSrc={imgSrc}
@@ -76,8 +83,8 @@ const Cart = () => {
                             )}
 
                             {itemData.customizations ? (
-                              <p className='text-xs text-gray-600 font-semibold mt-2'>
-                                Customized Product
+                              <p className='text-xs text-green-600 font-semibold mt-2'>
+                                ✓ Customized
                               </p>
                             ) : (
                               <p className='text-xs text-gray-500 mt-1'>
