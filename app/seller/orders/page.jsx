@@ -7,6 +7,7 @@ import Footer from '@/components/seller/Footer'
 import Loading from '@/components/Loading'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import CustomizedProductImage from '@/components/CustomizedProductImage' // Import the component
 
 const Orders = () => {
   const { currency, getToken, user } = useAppContext()
@@ -46,12 +47,12 @@ const Orders = () => {
       ) : (
         <div className='md:p-10 p-4 space-y-5'>
           <h2 className='text-lg font-medium'>Orders</h2>
-          <div className='max-w-4xl rounded-md'>
+          <div className='max-w-5xl rounded-md'>
             <table className='min-w-full table-auto'>
               <thead className='text-left'>
                 <tr>
                   <th className='text-nowrap pb-6 md:px-4 px-1 text-gray-600 font-medium'>
-                    Product Details
+                    Order Details
                   </th>
                   <th className='pb-6 md:px-4 px-1 text-gray-600 font-medium'>
                     Address
@@ -60,65 +61,67 @@ const Orders = () => {
                     Amount
                   </th>
                   <th className='pb-6 md:px-4 px-1 text-gray-600 font-medium'>
-                    Details
+                    Status
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order, index) => (
                   <tr key={index} className='border-t border-gray-500/20'>
-                    <td className='flex items-center gap-4 py-4 md:px-4 px-1'>
-                      <div className='flex-1 flex gap-5 max-w-80'>
-                        <Image
-                          className='max-w-16 max-h-16 object-cover'
-                          src={order.items[0].customImage || assets.box_icon}
-                          alt='box_icon'
-                          width={64}
-                          height={64}
-                        />
-                        <p className='flex flex-col gap-3'>
-                          <span className='font-medium'>
-                            {order.items
-                              .map(
-                                (item) =>
-                                  `${item.product.name}${
-                                    item.color ? ` (${item.color})` : ''
-                                  }${
-                                    item.customImage ? ' (Customized)' : ''
-                                  } x ${item.quantity}`
+                    {/* --- UPDATED: Order Items Display --- */}
+                    <td className='py-4 md:px-4 px-1'>
+                      {order.items.map((item, itemIndex) => (
+                        <div
+                          key={itemIndex}
+                          className='flex items-start gap-4 mb-4'
+                        >
+                          <div className='flex flex-col gap-2'>
+                            {item.product.imagesByColor?.[item.color]?.map(
+                              (baseImg, viewIdx) => (
+                                <CustomizedProductImage
+                                  key={viewIdx}
+                                  baseImageSrc={baseImg}
+                                  overlay={item.customizations?.[baseImg]}
+                                  className='w-20 h-20 object-contain bg-gray-100 rounded-lg p-1'
+                                />
                               )
-                              .join(', ')}
-                          </span>
-                          <span>Items : {order.items.length}</span>
-                        </p>
-                      </div>
+                            )}
+                          </div>
+                          <p className='flex flex-col gap-1'>
+                            <span className='font-medium text-base'>
+                              {item.product.name}
+                            </span>
+                            {item.color && (
+                              <span className='text-xs'>
+                                Color: {item.color}
+                              </span>
+                            )}
+                            <span className='text-xs'>
+                              Quantity: {item.quantity}
+                            </span>
+                            {item.customizations && (
+                              <span className='text-xs text-green-600 font-semibold'>
+                                ✓ Customized
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      ))}
                     </td>
                     <td className='py-4 md:px-4 px-1 text-gray-600'>
-                      <p>
-                        <span className='font-medium'>
-                          {order.address.fullName}
-                        </span>
-                        <br />
-                        <span>{order.address.area}</span>
-                        <br />
-                        <span>{`${order.address.city}, ${order.address.state}`}</span>
-                        <br />
-                        <span>{order.address.phoneNumber}</span>
+                      <p>{order.address.fullName}</p>
+                      <p>{order.address.area}</p>
+                    </td>
+                    <td className='py-4 md:px-4 px-1 font-medium text-gray-800'>
+                      {currency}
+                      {order.amount}
+                    </td>
+                    <td className='py-4 md:px-4 px-1'>
+                      <p className='text-yellow-600 font-semibold'>
+                        {order.status}
                       </p>
-                    </td>
-                    <td className='py-4 md:px-4 px-1 text-gray-600'>
-                      <p className='font-medium my-auto'>
-                        {currency}
-                        {order.amount}
-                      </p>
-                    </td>
-                    <td className='py-4 md:px-4 px-1 text-gray-600'>
-                      <p className='flex flex-col'>
-                        <span>Method : COD</span>
-                        <span>
-                          Date : {new Date(order.date).toLocaleDateString()}
-                        </span>
-                        <span>Payment : Pending</span>
+                      <p className='text-xs text-gray-500'>
+                        {new Date(order.date).toLocaleDateString()}
                       </p>
                     </td>
                   </tr>
