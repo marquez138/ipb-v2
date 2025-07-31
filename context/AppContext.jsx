@@ -61,21 +61,26 @@ export const AppContextProvider = (props) => {
   }
 
   // --- UPDATED addToCart and cart logic ---
-  const addToCart = async (itemId, color = '', customizations = null) => {
+  const addToCart = async (
+    itemId,
+    color = '',
+    customizations = null,
+    itemsBySize = []
+  ) => {
     if (!user) {
       return toast('Please login', { icon: '⚠️' })
     }
 
     let cartData = structuredClone(cartItems)
 
-    // Create a unique key for each item instance to allow multiple unique customizations of the same product
-    const itemKey = `${itemId}|${color}|${Date.now()}`
-
-    cartData[itemKey] = {
-      quantity: 1,
-      // if customizations exist, store them. Otherwise, null.
-      customizations: customizations,
-    }
+    itemsBySize.forEach((item) => {
+      // Create a unique key for each SIZE
+      const itemKey = `${itemId}|${color}|${item.size}|${Date.now()}`
+      cartData[itemKey] = {
+        quantity: item.quantity,
+        customizations: customizations,
+      }
+    })
 
     setCartItems(cartData)
 

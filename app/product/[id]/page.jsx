@@ -11,6 +11,9 @@ import { useAppContext } from '@/context/AppContext'
 import React from 'react'
 import toast from 'react-hot-toast'
 
+// Define the available sizes
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+
 const UploadIcon = () => (
   <svg
     className='w-8 h-8 text-gray-400'
@@ -55,6 +58,7 @@ const Product = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const mainImageContainerRef = useRef(null)
+  const [quantitiesBySize, setQuantitiesBySize] = useState({})
 
   // --- UPDATED: Simplified to use the new data structure directly ---
   const fetchProductData = useCallback(() => {
@@ -173,9 +177,25 @@ const Product = () => {
     }))
   }
 
+  const handleQuantityChange = (size, quantity) => {
+    const numQuantity = Math.max(0, Number(quantity)) // Ensure quantity is not negative
+    setQuantitiesBySize((prev) => ({
+      ...prev,
+      [size]: numQuantity,
+    }))
+  }
+
   const handleAddToCart = (buyNow = false) => {
     if (!user) {
-      return toast('Please login to add items to your cart.', { icon: '⚠️' })
+      return toast('Please login.', { icon: '⚠️' })
+    }
+
+    const itemsToAdd = Object.entries(quantitiesBySize)
+      .filter(([size, quantity]) => quantity > 0)
+      .map(([size, quantity]) => ({ size, quantity }))
+
+    if (itemsToAdd.length === 0) {
+      return toast.error('Please enter a quantity for at least one size.')
     }
 
     const containerRect = mainImageContainerRef.current.getBoundingClientRect()
@@ -198,19 +218,20 @@ const Product = () => {
         ? customizationsWithRatios
         : null
 
-    addToCart(productData._id, selectedColor, customizations)
-    toast.success('Added to cart!')
+    // Pass the array of items to the cart
+    addToCart(productData._id, selectedColor, customizations, itemsToAdd)
 
+    toast.success('Added to cart!')
     if (buyNow) {
       router.push('/cart')
     }
   }
 
-  // ... (rest of the handler functions are unchanged) ...
+  // ... (rest of the component logic)
 
   return productData ? (
     <>
-      <Navbar />
+      {/* ... Navbar ... */}
       <div className='px-6 md:px-16 lg:px-32 pt-14 space-y-10'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-16'>
           <div className='px-5 lg:px-16 xl:px-20'>
@@ -370,7 +391,36 @@ const Product = () => {
                 )}
               </div>
             )}
-            {/* ... (rest of the component) ... */}
+            <hr className='bg-gray-600 my-6' />
+            {/* --- NEW: Quantity by Size Inputs --- */}
+            <div className='my-6'>
+              <p className='font-medium text-gray-700 mb-2'>Quantity by Size</p>
+              <div className='grid grid-cols-4 gap-3'>
+                {SIZES.map((size) => (
+                  <div key={size}>
+                    <label
+                      htmlFor={`quantity-${size}`}
+                      className='block text-sm text-gray-600'
+                    >
+                      {size}
+                    </label>
+                    <input
+                      id={`quantity-${size}`}
+                      type='number'
+                      min='0'
+                      value={quantitiesBySize[size] || ''}
+                      onChange={(e) =>
+                        handleQuantityChange(size, e.target.value)
+                      }
+                      className='w-full border-gray-300 rounded-md shadow-sm p-2 text-center'
+                      placeholder='0'
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ... Add to Cart / Buy Now buttons ... */}
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => handleAddToCart(false)}
@@ -388,7 +438,7 @@ const Product = () => {
           </div>
         </div>
       </div>
-      <Footer />
+      {/* ... Footer ... */}
     </>
   ) : (
     <Loading />

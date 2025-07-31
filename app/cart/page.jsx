@@ -44,7 +44,7 @@ const Cart = () => {
               </thead>
               <tbody>
                 {Object.entries(cartItems).map(([itemKey, itemData]) => {
-                  const [productId, selectedColor] = itemKey.split('|')
+                  const [productId, selectedColor, size] = itemKey.split('|')
                   const product = products.find((p) => p._id === productId)
 
                   if (!product) return null
@@ -80,6 +80,9 @@ const Cart = () => {
                                 Color: {selectedColor}
                               </p>
                             )}
+                            <p className='text-sm font-semibold text-gray-800 mt-1'>
+                              Size: {size}
+                            </p>
 
                             {itemData.customizations ? (
                               <p className='text-xs text-green-600 font-semibold mt-2'>
