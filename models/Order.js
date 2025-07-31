@@ -7,7 +7,7 @@ const orderSchema = new mongoose.Schema({
       product: { type: String, required: true, ref: 'product' },
       quantity: { type: Number, required: true },
       color: { type: String },
-      // --- UPDATED: Store the entire customizations object ---
+      size: { type: String }, // --- ADDED: Store the size ---
       customizations: { type: Object },
     },
   ],

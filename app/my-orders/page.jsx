@@ -79,6 +79,10 @@ const MyOrders = () => {
                               <span className='font-medium text-base'>
                                 {item.product.name}
                               </span>
+                              {/* --- ADDED: Display the size --- */}
+                              <span className='text-sm font-semibold'>
+                                Size: {item.size}
+                              </span>
                               {item.color && (
                                 <span className='text-xs'>
                                   Color: {item.color}

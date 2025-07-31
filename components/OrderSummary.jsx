@@ -54,14 +54,14 @@ const OrderSummary = () => {
         return toast.error('Please select an address')
       }
 
-      // CORRECTED LOGIC: Properly parse the new cartItems structure
+      // --- UPDATED: Correctly parse the size from the cart item key ---
       const cartItemsArray = Object.entries(cartItems).map(([key, value]) => {
-        const [product, color] = key.split('|')
+        const [product, color, size] = key.split('|') // Now includes size
         return {
           product,
           quantity: value.quantity,
           color,
-          // Send the entire customizations object
+          size, // Add size to the payload
           customizations: value.customizations,
         }
       })
