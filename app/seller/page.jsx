@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useAppContext } from '@/context/AppContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import { colorSwatches } from '@/lib/colors' // 1. Import the color data
 
 const AddProduct = () => {
   const { getToken } = useAppContext()
@@ -19,24 +20,30 @@ const AddProduct = () => {
     imagesByColor: {},
   })
 
-  const [newColor, setNewColor] = useState('')
+  // 2. State to hold the currently selected color from the dropdown
+  const [selectedColor, setSelectedColor] = useState('')
 
   const handleTextChange = (e) => {
     const { name, value } = e.target
     setProductData((prev) => ({ ...prev, [name]: value }))
   }
 
+  // 3. Update handleAddColor to use the selected color from the state
   const handleAddColor = () => {
-    if (newColor && !productData.colors.includes(newColor)) {
+    const colorToAdd = selectedColor
+    if (colorToAdd && !productData.colors.includes(colorToAdd)) {
       setProductData((prev) => ({
         ...prev,
-        colors: [...prev.colors, newColor],
+        colors: [...prev.colors, colorToAdd],
         imagesByColor: {
           ...prev.imagesByColor,
-          [newColor]: [null, null, null], // Initialize with 3 view slots
+          [colorToAdd]: [null, null, null],
         },
       }))
-      setNewColor('')
+    } else if (!colorToAdd) {
+      toast.error('Please select a color to add.')
+    } else {
+      toast.error('This color has already been added.')
     }
   }
 
@@ -196,17 +203,24 @@ const AddProduct = () => {
           </div>
         </div>
 
-        {/* --- Color Management UI --- */}
+        {/* --- UPDATED Color Management UI --- */}
         <div>
           <label className='font-medium'>Product Colors</label>
-          <div className='flex gap-2 mt-2'>
-            <input
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              type='text'
-              placeholder='e.g., Black'
+          <div className='flex flex-col sm:flex-row gap-2 mt-2'>
+            {/* 4. Replace text input with a dropdown selector */}
+            <select
+              value={selectedColor}
+              onChange={(e) => setSelectedColor(e.target.value)}
               className='input-style flex-grow'
-            />
+            >
+              <option value=''>-- Select a Color --</option>
+              {colorSwatches.map((color) => (
+                <option key={color.name} value={color.name}>
+                  {color.name}
+                </option>
+              ))}
+            </select>
+
             <button
               type='button'
               onClick={handleAddColor}
@@ -221,6 +235,14 @@ const AddProduct = () => {
                 key={color}
                 className='flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full'
               >
+                <span
+                  className='w-4 h-4 rounded-full border border-gray-400'
+                  style={{
+                    backgroundColor:
+                      colorSwatches.find((c) => c.name === color)?.hex ||
+                      '#FFFFFF',
+                  }}
+                ></span>
                 <span>{color}</span>
                 <button
                   type='button'
