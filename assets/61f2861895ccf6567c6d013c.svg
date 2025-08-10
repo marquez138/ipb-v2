@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="neck label inner" width="100%" height="100%" viewBox="0 0 907.09 907.09" xmlns:printify="http://printify.com/adjuster"  printify:width="240" printify:height="240">
+  <defs>
+    <clipPath id="clippath">
+      <rect x=".55" y="23.54" width="907" height="884.5" fill="none"/>
+    </clipPath>
+  <image x="0" y="0" width="907.09" height="907.09" id="fabric-image"/><path d="m.8,908.04h907l-.71-836.06-132.46-41.23s-119.01,118.64-323.92,118.64S127.64,30.76,127.64,30.76L0,70.1l.8,837.95Z" id="fabric-0"/><clipPath id="fabric-0-clip"><use xlink:href="#fabric-0"/></clipPath><rect id="_necktag-path" width="453.43" height="453.43" fill="none" stroke-miterlimit="10" transform=""/><clipPath><use stroke-width="1mm" xlink:href="#_necktag-path"/></clipPath></defs>
+  <g id="color_first" fill-rule="nonzero" fill="#fff"><use xlink:href="#fabric-0"/><use clip-path="url(#fabric-0-clip)" xlink:href="#fabric-image"/>
+    
+    
+  <g clip-path="url(#_necktag-clippath)" transform="translate(219.62 238.57)"><svg id="placeholder_necktag" width="453.43" height="453.43" preserveAspectRatio="xMidYMid slice" viewBox="0 0 453.43 453.43"><use stroke-width="1mm" xlink:href="#_necktag-path" stroke="#ffffff"/><use stroke-width="1mm" xlink:href="#_necktag-path" stroke="#000000" stroke-dasharray="2mm, 2mm"/></svg></g></g>
+  <g id="outlines">
+    <g id="outlines_colored">
+      <path d="m870.3,60.54c-1.73,1.7-58.78,56.41-128.81,96.63-41.05,23.58-83.73,42.38-126.85,55.9-54.31,17.02-109.46,25.65-163.93,25.65s-109.61-8.63-163.89-25.65c-43.1-13.51-85.75-32.32-126.75-55.9C90.11,116.93,34.03,62.25,32.3,60.54" fill="none" stroke="#272223" stroke-miterlimit="10" stroke-width="3.28"/>
+      <path d="m864.8,59.04c-6,1-53.28,50.91-123.31,91.13-41.05,23.58-83.73,42.38-126.85,55.9-54.31,17.02-109.46,25.65-163.93,25.65s-109.61-8.63-163.89-25.65c-43.1-13.51-85.75-32.32-126.75-55.9C90.11,109.93,48.3,65.54,39.8,58.04" fill="none" opacity=".5" stroke="#272223" stroke-dasharray="0 0 13.33 6.67" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.19"/>
+      <path d="m74.17,47.24s154.94,152.81,376.54,152.81S827.57,47.24,827.57,47.24" fill="none" stroke="#272223" stroke-miterlimit="10" stroke-width="3.28"/>
+      <path d="m65.8,50.04s159.41,158,381,158S836.8,50.04,836.8,50.04" fill="none" opacity=".5" stroke="#272223" stroke-dasharray="0 0 13.33 6.67" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.19"/>
+      <g clip-path="url(#clippath)">
+        <path d="m-10.7,73.54L127.64,30.76c50.65,43.99,146.63,118.64,323.06,118.64h.86c176.43,0,272.41-74.65,323.06-118.64l151.68,51.79" fill="none" stroke="#272223" stroke-miterlimit="10" stroke-width="8"/>
+      </g>
+    </g>
+  </g>
+</svg>
