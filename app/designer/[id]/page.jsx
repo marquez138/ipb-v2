@@ -1,15 +1,13 @@
 'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { assets } from '@/assets/assets'
-import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import NextImage from 'next/image'
 import { useParams } from 'next/navigation'
 import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
-import React from 'react'
 import toast from 'react-hot-toast'
+import SvgView from '@/components/SvgView'
 
 // Define the available sizes
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
@@ -42,6 +40,13 @@ const getColorHex = (colorName) => {
   return COLOR_MAP[colorName] || '#cccccc'
 }
 
+const viewFromUrl = (url = '') => {
+  const u = url.toLowerCase()
+  if (u.includes('sleeve')) return 'sleeve'
+  if (u.includes('back')) return 'back'
+  return 'front'
+}
+
 const Product = () => {
   const { id } = useParams()
   const { products, router, addToCart, user } = useAppContext()
@@ -50,34 +55,51 @@ const Product = () => {
   const [productData, setProductData] = useState(null)
   const [selectedColor, setSelectedColor] = useState('')
 
-  // This state now holds the images for the currently selected color
+  // images for the currently selected color
   const [currentColorImages, setCurrentColorImages] = useState([])
 
+  // overlays keyed by view: front/back/sleeve
   const [customOverlays, setCustomOverlays] = useState({})
   const fileInputRef = useRef(null)
+
+  // gesture state
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [dragMode, setDragMode] = useState(null) // 'move' | 'resize' | 'rotate'
+  const [dragMeta, setDragMeta] = useState(null) // refs for gesture
+
   const mainImageContainerRef = useRef(null)
+  const svgRef = useRef(null)
   const [quantitiesBySize, setQuantitiesBySize] = useState({})
 
-  // --- UPDATED: Simplified to use the new data structure directly ---
+  // --- [SVG VIEW STATE] ---
+  const [selectedView, setSelectedView] = useState('front') // 'front' | 'back' | 'sleeve'
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
+
+  useEffect(() => {
+    if (!mainImageContainerRef?.current) return
+    const el = mainImageContainerRef.current
+    const update = () => {
+      const r = el.getBoundingClientRect()
+      setContainerSize({ w: r.width, h: r.height })
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Load product and prime images/views
   const fetchProductData = useCallback(() => {
-    const product = products.find((product) => product._id === id)
+    const product = products.find((p) => p._id === id)
     if (product) {
       setProductData(product)
-
-      // Directly use the imagesByColor object from the product data
-      if (
-        product.colors &&
-        product.colors.length > 0 &&
-        product.imagesByColor
-      ) {
+      if (product.colors?.length && product.imagesByColor) {
         const initialColor = product.colors[0]
         const initialImages = product.imagesByColor[initialColor] || []
-
         setSelectedColor(initialColor)
         setCurrentColorImages(initialImages)
-        setMainImage(initialImages[0] || null) // Set to the first view of the first color
+        setMainImage(initialImages[0] || null)
+        if (initialImages[0]) setSelectedView(viewFromUrl(initialImages[0]))
       }
     }
   }, [id, products])
@@ -90,19 +112,19 @@ const Product = () => {
     setSelectedColor(color)
     const newImages = productData.imagesByColor[color] || []
     setCurrentColorImages(newImages)
-    setMainImage(newImages[0] || null) // Reset to the first view of the newly selected color
+    setMainImage(newImages[0] || null)
+    if (newImages[0]) setSelectedView(viewFromUrl(newImages[0]))
   }
 
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       const reader = new FileReader()
-
       reader.onload = (event) => {
         const dataUrl = event.target.result
         setCustomOverlays((prev) => ({
           ...prev,
-          [mainImage]: {
+          [selectedView]: {
             src: dataUrl,
             position: { x: 50, y: 50 },
             size: 150,
@@ -110,24 +132,52 @@ const Product = () => {
           },
         }))
       }
-
       reader.readAsDataURL(file)
     }
     e.target.value = null
   }
 
-  // ...(The rest of your handler functions and JSX remain exactly the same)...
   const handleDesignAreaClick = () => {
-    fileInputRef.current.click()
+    fileInputRef.current?.click()
   }
 
   const handleDeleteOverlay = (e) => {
     e.stopPropagation()
-    const newOverlays = { ...customOverlays }
-    delete newOverlays[mainImage]
-    setCustomOverlays(newOverlays)
+    setCustomOverlays((prev) => {
+      const next = { ...prev }
+      delete next[selectedView]
+      return next
+    })
   }
 
+  // --- [PRINT AREA CLAMP HELPERS] ---
+  function getPrintBoundsPx() {
+    let svg =
+      svgRef.current || mainImageContainerRef?.current?.querySelector('svg')
+    if (!svg || !mainImageContainerRef?.current) return null
+    const r = mainImageContainerRef.current.getBoundingClientRect()
+    const vb = svg.viewBox?.baseVal
+    if (!vb) return null
+    const sx = r.width / vb.width
+    const sy = r.height / vb.height
+    const rect = svg.querySelector('#printArea > rect')
+    if (!rect) return null
+    const x = parseFloat(rect.getAttribute('x') || '0')
+    const y = parseFloat(rect.getAttribute('y') || '0')
+    const w = parseFloat(rect.getAttribute('width') || '0')
+    const h = parseFloat(rect.getAttribute('height') || '0')
+    return { x: x * sx, y: y * sy, w: w * sx, h: h * sy }
+  }
+  function clampToPrint(x, y, sizePx) {
+    const pb = getPrintBoundsPx()
+    if (!pb) return { x, y }
+    return {
+      x: Math.max(pb.x, Math.min(x, pb.x + pb.w - sizePx)),
+      y: Math.max(pb.y, Math.min(y, pb.y + pb.h - sizePx)),
+    }
+  }
+
+  // gestures
   const handleMouseDown = (e) => {
     e?.stopPropagation?.()
     const overlayState = customOverlays[selectedView]
@@ -143,73 +193,116 @@ const Product = () => {
     })
   }
 
-  const handleMouseMove = (e) => {
+  const handleHandleDown = (type, corner) => {
+    const overlayState = customOverlays[selectedView]
+    if (!overlayState) return
+    setIsDragging(true)
+    setDragMode(type)
+    const center = {
+      x: overlayState.position.x + overlayState.size / 2,
+      y: overlayState.position.y + overlayState.size / 2,
+    }
+    setDragMeta({
+      type,
+      corner,
+      center,
+      startX: null,
+      startY: null,
+      fromPos: { ...overlayState.position },
+      fromSize: overlayState.size,
+      fromRot: overlayState.rotation,
+    })
+  }
+
+  const handleMouseMove = (eOrTouch) => {
     if (!isDragging) return
-    const containerRect = mainImageContainerRef.current.getBoundingClientRect()
-    const newX = e.clientX - dragStart.x
-    const newY = e.clientY - dragStart.y
+    const e = eOrTouch.touches ? eOrTouch.touches[0] : eOrTouch
+    const overlay = customOverlays[selectedView]
+    if (!overlay) return
 
-    const overlay = customOverlays[mainImage]
-    const clampedX = Math.max(
-      0,
-      Math.min(newX, containerRect.width - overlay.size)
-    )
-    const clampedY = Math.max(
-      0,
-      Math.min(newY, containerRect.height - overlay.size)
-    )
+    if (dragMode === 'move') {
+      const dx = e.clientX - dragMeta.startX
+      const dy = e.clientY - dragMeta.startY
+      const newX = dragMeta.fromPos.x + dx
+      const newY = dragMeta.fromPos.y + dy
+      const { x, y } = clampToPrint(newX, newY, overlay.size)
+      setCustomOverlays((prev) => ({
+        ...prev,
+        [selectedView]: { ...prev[selectedView], position: { x, y } },
+      }))
+      return
+    }
 
-    setCustomOverlays((prev) => ({
-      ...prev,
-      [mainImage]: {
-        ...prev[mainImage],
-        position: { x: clampedX, y: clampedY },
-      },
-    }))
+    if (dragMode === 'resize') {
+      const dx = e.clientX - (dragMeta.startX ?? e.clientX)
+      const dy = e.clientY - (dragMeta.startY ?? e.clientY)
+      const delta = Math.max(dx, dy)
+      const newSize = Math.max(50, Math.min(800, dragMeta.fromSize + delta))
+      const { x, y } = clampToPrint(
+        overlay.position.x,
+        overlay.position.y,
+        newSize
+      )
+      setCustomOverlays((prev) => ({
+        ...prev,
+        [selectedView]: {
+          ...prev[selectedView],
+          position: { x, y },
+          size: newSize,
+        },
+      }))
+      return
+    }
+
+    if (dragMode === 'rotate') {
+      const cx = dragMeta.center.x
+      const cy = dragMeta.center.y
+      const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI)
+      const newRot = Math.round((angle + 360) % 360)
+      setCustomOverlays((prev) => ({
+        ...prev,
+        [selectedView]: { ...prev[selectedView], rotation: newRot },
+      }))
+      return
+    }
   }
 
   const handleMouseUp = () => {
     setIsDragging(false)
+    setDragMode(null)
+    setDragMeta(null)
   }
 
   const handleControlChange = (property, value) => {
     setCustomOverlays((prev) => ({
       ...prev,
-      [mainImage]: {
-        ...prev[mainImage],
+      [selectedView]: {
+        ...prev[selectedView],
         [property]: parseInt(value, 10),
       },
     }))
   }
 
   const handleQuantityChange = (size, quantity) => {
-    const numQuantity = Math.max(0, Number(quantity)) // Ensure quantity is not negative
-    setQuantitiesBySize((prev) => ({
-      ...prev,
-      [size]: numQuantity,
-    }))
+    const numQuantity = Math.max(0, Number(quantity))
+    setQuantitiesBySize((prev) => ({ ...prev, [size]: numQuantity }))
   }
 
   const handleAddToCart = (buyNow = false) => {
-    if (!user) {
-      return toast('Please login.', { icon: '⚠️' })
-    }
+    if (!user) return toast('Please login.', { icon: '⚠️' })
 
     const itemsToAdd = Object.entries(quantitiesBySize)
-      .filter(([size, quantity]) => quantity > 0)
+      .filter(([_, q]) => q > 0)
       .map(([size, quantity]) => ({ size, quantity }))
-
-    if (itemsToAdd.length === 0) {
+    if (!itemsToAdd.length)
       return toast.error('Please enter a quantity for at least one size.')
-    }
 
     const containerRect = mainImageContainerRef.current.getBoundingClientRect()
     const { width: containerWidth, height: containerHeight } = containerRect
 
     const customizationsWithRatios = {}
-
-    for (const [baseImageUrl, overlay] of Object.entries(customOverlays)) {
-      customizationsWithRatios[baseImageUrl] = {
+    for (const [viewKey, overlay] of Object.entries(customOverlays)) {
+      customizationsWithRatios[viewKey] = {
         src: overlay.src,
         rotation: overlay.rotation,
         xRatio: overlay.position.x / containerWidth,
@@ -218,21 +311,13 @@ const Product = () => {
       }
     }
 
-    const customizations =
-      Object.keys(customizationsWithRatios).length > 0
-        ? customizationsWithRatios
-        : null
-
-    // Pass the array of items to the cart
+    const customizations = Object.keys(customizationsWithRatios).length
+      ? customizationsWithRatios
+      : null
     addToCart(productData._id, selectedColor, customizations, itemsToAdd)
-
     toast.success('Added to cart!')
-    if (buyNow) {
-      router.push('/cart')
-    }
+    if (buyNow) router.push('/cart')
   }
-
-  // ... (rest of the component logic)
 
   return productData ? (
     <>
@@ -240,95 +325,75 @@ const Product = () => {
       <div className='px-6 md:px-16 lg:px-32 pt-14 space-y-10'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-16'>
           <div className='px-5 lg:px-16 xl:px-20'>
+            {/* View Toggle */}
+            <div className='mb-3 flex flex-wrap gap-2'>
+              {['front', 'back', 'sleeve'].map((v) => (
+                <button
+                  key={v}
+                  className={`px-3 py-1 rounded border ${
+                    selectedView === v ? 'bg-black text-white' : 'bg-white'
+                  }`}
+                  onClick={() => setSelectedView(v)}
+                >
+                  {v[0].toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+              <button
+                type='button'
+                className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100'
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload artwork
+              </button>
+            </div>
+
             <div
               ref={mainImageContainerRef}
               className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4'
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+              onTouchCancel={handleMouseUp}
+              onClick={handleDesignAreaClick}
+              style={{ minHeight: 480 }}
             >
-              <NextImage
-                src={mainImage || assets.upload_area}
-                alt={productData.name || 'product image'}
-                className='w-full h-auto object-cover'
-                width={1280}
-                height={720}
-                key={mainImage} // Add key to force re-render on image change
+              <SvgView
+                ref={svgRef}
+                view={selectedView}
+                colorHex={getColorHex(selectedColor)}
+                art={
+                  customOverlays[selectedView]
+                    ? {
+                        src: customOverlays[selectedView].src,
+                        xPx: customOverlays[selectedView].position.x,
+                        yPx: customOverlays[selectedView].position.y,
+                        sizePx: customOverlays[selectedView].size,
+                        rotation: customOverlays[selectedView].rotation,
+                      }
+                    : null
+                }
+                containerW={containerSize.w}
+                containerH={containerSize.h}
+                onArtMouseDown={handleMouseDown}
+                onHandleDown={handleHandleDown}
+                className='w-full h-auto'
               />
-              {!customOverlays[mainImage] ? (
-                <div
-                  className='absolute inset-0 m-auto w-3/4 h-3/4 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-400/10'
-                  onClick={handleDesignAreaClick}
-                >
+
+              {!customOverlays[selectedView] && (
+                <div className='absolute inset-0 m-auto w-3/4 h-3/4 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center pointer-events-none'>
                   <UploadIcon />
                   <p className='text-sm text-gray-500 mt-2'>
                     Click to add your design
                   </p>
                 </div>
-              ) : (
-                <div
-                  className='absolute cursor-grab group'
-                  style={{
-                    left: `${customOverlays[mainImage].position.x}px`,
-                    top: `${customOverlays[mainImage].position.y}px`,
-                    width: `${customOverlays[mainImage].size}px`,
-                    transform: `rotate(${customOverlays[mainImage].rotation}deg)`,
-                  }}
-                  onMouseDown={handleMouseDown}
-                >
-                  <NextImage
-                    src={customOverlays[mainImage].src}
-                    alt='custom overlay'
-                    width={customOverlays[mainImage].size}
-                    height={customOverlays[mainImage].size}
-                    objectFit='contain'
-                    className='pointer-events-none'
-                  />
-                  <button
-                    onClick={handleDeleteOverlay}
-                    className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
-                  >
-                    &#x2715;
-                  </button>
-                </div>
               )}
             </div>
 
-            {customOverlays[mainImage] && (
-              <div className='mt-4 space-y-3'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Size
-                  </label>
-                  <input
-                    type='range'
-                    min='50'
-                    max='400'
-                    value={customOverlays[mainImage].size}
-                    onChange={(e) =>
-                      handleControlChange('size', e.target.value)
-                    }
-                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Rotation
-                  </label>
-                  <input
-                    type='range'
-                    min='0'
-                    max='360'
-                    value={customOverlays[mainImage].rotation}
-                    onChange={(e) =>
-                      handleControlChange('rotation', e.target.value)
-                    }
-                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'
-                  />
-                </div>
-              </div>
-            )}
+            {/* Hidden file input for uploads (visually hidden, not display:none) */}
             <input
+              id='artUpload'
               type='file'
               ref={fileInputRef}
               onChange={handleCustomImageChange}
@@ -343,12 +408,15 @@ const Product = () => {
               accept='image/*'
             />
 
-            {/* --- This thumbnail section now correctly shows all views for the selected color --- */}
+            {/* Thumbnails */}
             <div className='grid grid-cols-4 gap-4 mt-4'>
               {currentColorImages.map((image, index) => (
                 <div
                   key={index}
-                  onClick={() => setMainImage(image)}
+                  onClick={() => {
+                    setMainImage(image)
+                    setSelectedView(viewFromUrl(image))
+                  }}
                   className={`cursor-pointer rounded-lg overflow-hidden bg-gray-500/10 ${
                     mainImage === image ? 'ring-2 ring-orange-500' : ''
                   }`}
@@ -404,7 +472,8 @@ const Product = () => {
               </div>
             )}
             <hr className='bg-gray-600 my-6' />
-            {/* --- NEW: Quantity by Size Inputs --- */}
+
+            {/* Quantity by Size */}
             <div className='my-6'>
               <p className='font-medium text-gray-700 mb-2'>Quantity by Size</p>
               <div className='grid grid-cols-4 gap-3'>
@@ -432,7 +501,7 @@ const Product = () => {
               </div>
             </div>
 
-            {/* ... Add to Cart / Buy Now buttons ... */}
+            {/* Add to Cart / Buy Now */}
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => handleAddToCart(false)}
