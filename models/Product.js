@@ -20,12 +20,6 @@ const productSchema = new mongoose.Schema({
   },
   // --- REMOVED (or comment out) the old image field ---
   // image: { type: Array, required: true },
-
-  // NEW: Add an svgContent field
-  svgContent: {
-    type: String,
-    required: true,
-  },
   date: { type: Number, required: true },
 })
 
