@@ -286,6 +286,13 @@ const Product = () => {
                   {v[0].toUpperCase() + v.slice(1)}
                 </button>
               ))}
+              <button
+                type='button'
+                className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100'
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload artwork
+              </button>
             </div>
 
             <div
@@ -328,6 +335,14 @@ const Product = () => {
               )}
             </div>
 
+            {/* Hidden file input for uploads */}
+            <input
+              type='file'
+              ref={fileInputRef}
+              onChange={handleCustomImageChange}
+              style={{ display: 'none' }}
+              accept='image/*'
+            />
             {/* Thumbnails */}
             <div className='grid grid-cols-4 gap-4 mt-4'>
               {currentColorImages.map((image, index) => (
