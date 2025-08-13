@@ -1,12 +1,14 @@
-/**
- * components/SvgView.jsx
- * Loads front/back/sleeve SVGs, tints via currentColor, creates clip from print border,
- * and injects the artwork image inside the SVG.
- */
 'use client'
-import React, { useEffect, useMemo, useRef, useState, forwardRef } from 'react'
-import PropTypes from 'prop-types'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
+/**
+ * SvgView.jsx (with handles + touch)
+ * - Loads garment SVG per view
+ * - Tints fabric via currentColor
+ * - Computes print area -> clipPath #printArea
+ * - Renders artwork (<image>) and manipulation handles (corners + rotate)
+ * - Emits onArtMouseDown / onHandleDown(type, corner) for mouse & touch
+ */
 const FILES = {
   front: '/views/tshirt_front.svg',
   back: '/views/tshirt_back.svg',
@@ -25,168 +27,248 @@ const COLORABLE_IDS = {
   sleeve: ['color_first'],
 }
 
-const SvgView = forwardRef(function SvgView(
-  { view, colorHex, art, containerW, containerH, className, onArtMouseDown },
-  ref
-) {
-  const [svgMarkup, setSvgMarkup] = useState(null)
-  const svgRef = useRef(null)
+function parseViewBox(svgText) {
+  const m = svgText.match(
+    /viewBox\s*=\s*["']\s*([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s*["']/i
+  )
+  if (!m) return [0, 0, 1000, 1000]
+  return m.slice(1, 5).map(Number)
+}
 
-  useEffect(() => {
-    if (typeof ref === 'function') ref(svgRef.current)
-    else if (ref) ref.current = svgRef.current
-  }, [ref, svgMarkup])
+function stripOuterSvg(svgText) {
+  const m = svgText.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i)
+  return m ? m[1] : svgText
+}
 
+export default function SvgView({
+  view,
+  colorHex,
+  art, // { src, xPx, yPx, sizePx, rotation }
+  containerW,
+  containerH,
+  className,
+  onArtMouseDown,
+  onHandleDown, // (type: 'move'|'resize'|'rotate', corner?: 'nw'|'ne'|'se'|'sw')
+}) {
+  const rootRef = useRef(null)
+  const [markup, setMarkup] = useState(null)
+  const [vb, setVb] = useState([0, 0, 1000, 1000])
+  const [printRect, setPrintRect] = useState(null)
+
+  // Load SVG garment
   useEffect(() => {
-    let cancelled = false
+    let dead = false
     ;(async () => {
-      const res = await fetch(FILES[view], { cache: 'force-cache' })
-      const text = await res.text()
-      if (!cancelled) setSvgMarkup(text)
+      try {
+        const res = await fetch(FILES[view], { cache: 'force-cache' })
+        const text = await res.text()
+        if (dead) return
+        setVb(parseViewBox(text))
+        setMarkup(stripOuterSvg(text))
+      } catch (e) {
+        console.warn('Failed to load SVG:', e)
+      }
     })()
     return () => {
-      cancelled = true
+      dead = true
     }
   }, [view])
 
+  // Compute print rect from target element
   useEffect(() => {
-    const svg = svgRef.current
+    const svg = rootRef.current
     if (!svg) return
-    const rect = svg.querySelector(`#${CSS.escape(PRINT_IDS[view])}`)
-    if (!rect) return
+    const targetId = PRINT_IDS[view]
+    const el = svg.querySelector(`#${CSS.escape(targetId)}`)
+    if (!el) return
+    const bbox = el.getBBox()
+    setPrintRect({
+      x: bbox.x,
+      y: bbox.y,
+      width: bbox.width,
+      height: bbox.height,
+    })
+    if (el.style) el.style.display = 'none'
+  }, [markup, view])
 
-    const bbox = rect.getBBox()
-    rect.style.display = 'none'
+  // Convert px -> vb units
+  const sx = useMemo(
+    () => (containerW > 0 ? vb[2] / containerW : 1),
+    [containerW, vb]
+  )
+  const sy = useMemo(
+    () => (containerH > 0 ? vb[3] / containerH : 1),
+    [containerH, vb]
+  )
 
-    let defs = svg.querySelector('defs')
-    if (!defs) {
-      defs = document.createElementNS(svg.namespaceURI, 'defs')
-      svg.insertBefore(defs, svg.firstChild)
-    }
+  // Art attributes in vb units
+  const artAttrs = useMemo(() => {
+    if (!art) return null
+    const w = art.sizePx * sx
+    const x = art.xPx * sx
+    const y = art.yPx * sy
+    const cx = x + w / 2
+    const cy = y + w / 2
+    return { x, y, w, cx, cy, rotation: art.rotation || 0 }
+  }, [art, sx, sy])
 
-    let clip = svg.querySelector('#printArea')
-    if (!clip) clip = document.createElementNS(svg.namespaceURI, 'clipPath')
-    clip.setAttribute('id', 'printArea')
-    while (clip.firstChild) clip.removeChild(clip.firstChild)
-
-    const clipRect = document.createElementNS(svg.namespaceURI, 'rect')
-    clipRect.setAttribute('x', String(bbox.x))
-    clipRect.setAttribute('y', String(bbox.y))
-    clipRect.setAttribute('width', String(bbox.width))
-    clipRect.setAttribute('height', String(bbox.height))
-    clipRect.setAttribute('rx', '8')
-    clip.appendChild(clipRect)
-    if (!clip.parentNode) defs.appendChild(clip)
-
-    let style = svg.querySelector("style[data-injected='tint']")
+  // Fabric tinting
+  const tintCSS = useMemo(() => {
     const targets = (COLORABLE_IDS[view] || []).map((id) => `#${id}`).join(', ')
-    const css = `
+    if (!targets) return ''
+    return `
       ${targets} * { fill: currentColor !important; }
       ${targets} { fill: currentColor !important; }
     `
-    if (!style) {
-      style = document.createElementNS(svg.namespaceURI, 'style')
-      style.setAttribute('data-injected', 'tint')
-      style.textContent = css
-      svg.appendChild(style)
-    } else {
-      style.textContent = css
-    }
+  }, [view])
 
-    svg.style.color = colorHex || '#000000'
+  // Handle sizes
+  const handleR = useMemo(
+    () => (artAttrs ? Math.max(6, artAttrs.w * 0.04) : 6),
+    [artAttrs]
+  )
+  const rotateOffset = useMemo(
+    () => (artAttrs ? Math.max(20, artAttrs.w * 0.15) : 20),
+    [artAttrs]
+  )
 
-    const artGroup = svg.querySelector('#__artwork')
-    if (artGroup) {
-      artGroup.removeEventListener('mousedown', onArtMouseDown)
-      if (onArtMouseDown) artGroup.addEventListener('mousedown', onArtMouseDown)
-    }
-  }, [view, colorHex, svgMarkup, onArtMouseDown])
-
-  const artTransform = useMemo(() => {
-    const svg = svgRef.current
-    if (!svg || !art) return null
-    const vb = svg.viewBox?.baseVal || { width: 1000, height: 1000 }
-    const sx = containerW > 0 ? vb.width / containerW : 1
-    const x = art.xPx * sx
-    const y = art.yPx * sx * (containerW ? 1 : 1) // keep square scaling
-    const w = art.sizePx * sx
-    return {
-      x,
-      y: art.yPx * (vb.height / (containerH || vb.height)),
-      w,
-      rotate: art.rotation || 0,
-      cx: x + w / 2,
-      cy: art.yPx * (vb.height / (containerH || vb.height)) + w / 2,
-    }
-  }, [art, containerW, containerH, svgMarkup])
-
-  useEffect(() => {
-    const svg = svgRef.current
-    if (!svg || !svgMarkup) return
-
-    const prev = svg.querySelector('#__artwork')
-    if (prev) prev.remove()
-
-    if (!artTransform || !art?.src) return
-
-    const g = document.createElementNS(svg.namespaceURI, 'g')
-    g.setAttribute('id', '__artwork')
-    g.setAttribute('clip-path', 'url(#printArea)')
-    g.style.cursor = 'grab'
-
-    const gi = document.createElementNS(svg.namespaceURI, 'g')
-    gi.setAttribute(
-      'transform',
-      `rotate(${artTransform.rotate}, ${artTransform.cx}, ${artTransform.cy})`
-    )
-
-    const img = document.createElementNS(svg.namespaceURI, 'image')
-    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', art.src)
-    img.setAttribute('x', String(artTransform.x))
-    img.setAttribute('y', String(artTransform.y))
-    img.setAttribute('width', String(artTransform.w))
-    img.setAttribute('height', String(artTransform.w))
-    img.setAttribute('preserveAspectRatio', 'xMidYMid meet')
-    img.style.pointerEvents = 'none'
-
-    gi.appendChild(img)
-    g.appendChild(gi)
-
-    if (onArtMouseDown) g.addEventListener('mousedown', onArtMouseDown)
-
-    svg.appendChild(g)
-
-    return () => {
-      g.removeEventListener('mousedown', onArtMouseDown)
-      g.remove()
-    }
-  }, [svgMarkup, artTransform, art, onArtMouseDown])
-
-  if (!svgMarkup) return <div className={className} />
+  // Wrappers to unify mouse & touch
+  const wrapMouseDown = (fn) => (e) => {
+    e.stopPropagation()
+    fn?.(e)
+  }
+  const wrapTouchStart = (fn) => (e) => {
+    e.stopPropagation()
+    fn?.(e.changedTouches[0])
+  }
 
   return (
     <svg
-      ref={svgRef}
+      ref={rootRef}
       className={className}
-      dangerouslySetInnerHTML={{ __html: svgMarkup }}
-    />
+      viewBox={`${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`}
+      style={{ color: colorHex }}
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      {tintCSS && <style dangerouslySetInnerHTML={{ __html: tintCSS }} />}
+      {markup && <g dangerouslySetInnerHTML={{ __html: markup }} />}
+
+      <defs>
+        {printRect && (
+          <clipPath id='printArea'>
+            <rect
+              x={printRect.x}
+              y={printRect.y}
+              width={printRect.width}
+              height={printRect.height}
+              rx='8'
+            />
+          </clipPath>
+        )}
+      </defs>
+
+      {/* Artwork + selection UI */}
+      {art && art.src && printRect && artAttrs && (
+        <g>
+          {/* Artwork image in clip */}
+          <g
+            id='__artwork'
+            clipPath='url(#printArea)'
+            onMouseDown={wrapMouseDown(
+              () => onArtMouseDown && onArtMouseDown()
+            )}
+            onTouchStart={wrapTouchStart(
+              () => onArtMouseDown && onArtMouseDown()
+            )}
+            style={{ cursor: 'grab' }}
+          >
+            <g
+              transform={`rotate(${artAttrs.rotation}, ${artAttrs.cx}, ${artAttrs.cy})`}
+            >
+              <image
+                href={art.src}
+                x={artAttrs.x}
+                y={artAttrs.y}
+                width={artAttrs.w}
+                height={artAttrs.w}
+                preserveAspectRatio='xMidYMid meet'
+                style={{ pointerEvents: 'none' }}
+              />
+            </g>
+          </g>
+
+          {/* Selection rect */}
+          <g
+            transform={`rotate(${artAttrs.rotation}, ${artAttrs.cx}, ${artAttrs.cy})`}
+          >
+            <rect
+              x={artAttrs.x}
+              y={artAttrs.y}
+              width={artAttrs.w}
+              height={artAttrs.w}
+              fill='none'
+              stroke='rgba(0,0,0,0.4)'
+              strokeDasharray='6 6'
+            />
+
+            {/* Corner handles for resize */}
+            {['nw', 'ne', 'se', 'sw'].map((corner) => {
+              const dx = corner.includes('w') ? 0 : artAttrs.w
+              const dy = corner.includes('n') ? 0 : artAttrs.w
+              const hx = artAttrs.x + dx
+              const hy = artAttrs.y + dy
+              return (
+                <circle
+                  key={corner}
+                  cx={hx}
+                  cy={hy}
+                  r={handleR}
+                  fill='white'
+                  stroke='black'
+                  onMouseDown={wrapMouseDown(
+                    () => onHandleDown && onHandleDown('resize', corner)
+                  )}
+                  onTouchStart={wrapTouchStart(
+                    () => onHandleDown && onHandleDown('resize', corner)
+                  )}
+                  style={{ cursor: `${corner}-resize` }}
+                />
+              )
+            })}
+
+            {/* Rotate handle above top-center */}
+            {(() => {
+              const hx = artAttrs.x + artAttrs.w / 2
+              const hy = artAttrs.y - rotateOffset
+              return (
+                <g key='rotate'>
+                  <line
+                    x1={artAttrs.x + artAttrs.w / 2}
+                    y1={artAttrs.y}
+                    x2={hx}
+                    y2={hy}
+                    stroke='black'
+                  />
+                  <circle
+                    cx={hx}
+                    cy={hy}
+                    r={handleR}
+                    fill='white'
+                    stroke='black'
+                    onMouseDown={wrapMouseDown(
+                      () => onHandleDown && onHandleDown('rotate')
+                    )}
+                    onTouchStart={wrapTouchStart(
+                      () => onHandleDown && onHandleDown('rotate')
+                    )}
+                    style={{ cursor: 'grab' }}
+                  />
+                </g>
+              )
+            })()}
+          </g>
+        </g>
+      )}
+    </svg>
   )
-})
-
-SvgView.propTypes = {
-  view: PropTypes.oneOf(['front', 'back', 'sleeve']).isRequired,
-  colorHex: PropTypes.string.isRequired,
-  art: PropTypes.shape({
-    src: PropTypes.string,
-    xPx: PropTypes.number,
-    yPx: PropTypes.number,
-    sizePx: PropTypes.number,
-    rotation: PropTypes.number,
-  }),
-  containerW: PropTypes.number.isRequired,
-  containerH: PropTypes.number.isRequired,
-  className: PropTypes.string,
-  onArtMouseDown: PropTypes.func,
 }
-
-export default SvgView
