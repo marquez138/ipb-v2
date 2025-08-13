@@ -198,12 +198,8 @@ const SvgView = forwardRef(function SvgView(
           <g
             id='__artwork'
             clipPath='url(#printArea)'
-            onMouseDown={wrapMouseDown(
-              () => onArtMouseDown && onArtMouseDown()
-            )}
-            onTouchStart={wrapTouchStart(
-              () => onArtMouseDown && onArtMouseDown()
-            )}
+            onMouseDown={wrapMouseDown(onArtMouseDown)}
+            onTouchStart={wrapTouchStart(onArtMouseDown)}
             style={{ cursor: 'grab' }}
           >
             <g

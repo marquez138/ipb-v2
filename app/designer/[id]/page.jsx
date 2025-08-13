@@ -340,10 +340,13 @@ const Product = () => {
               ))}
               <button
                 type='button'
-                className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100'
+                className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
                 onClick={() => fileInputRef.current?.click()}
+                disabled={!!customOverlays[selectedView]}
               >
-                Upload artwork
+                {customOverlays[selectedView]
+                  ? 'Artwork added'
+                  : 'Upload artwork'}
               </button>
             </div>
 
@@ -356,7 +359,12 @@ const Product = () => {
               onTouchMove={handleMouseMove}
               onTouchEnd={handleMouseUp}
               onTouchCancel={handleMouseUp}
-              onClick={handleDesignAreaClick}
+              // Only allow click-to-upload when there's no art for this view
+              onClick={
+                !customOverlays[selectedView]
+                  ? handleDesignAreaClick
+                  : undefined
+              }
               style={{ minHeight: 480 }}
             >
               <SvgView
