@@ -123,6 +123,8 @@ const Product = () => {
 
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
+      toast.dismiss()
+      toast('Uploading artwork…')
       const file = e.target.files[0]
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -286,6 +288,13 @@ const Product = () => {
                   {v[0].toUpperCase() + v.slice(1)}
                 </button>
               ))}
+              <button
+                type='button'
+                className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100'
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload artwork
+              </button>
             </div>
 
             <div
@@ -328,6 +337,22 @@ const Product = () => {
               )}
             </div>
 
+            {/* Hidden file input for uploads */}
+            <input
+              id='artUpload'
+              type='file'
+              ref={fileInputRef}
+              onChange={handleCustomImageChange}
+              style={{
+                position: 'absolute',
+                width: 1,
+                height: 1,
+                opacity: 0,
+                left: -9999,
+                top: 'auto',
+              }}
+              accept='image/*'
+            />
             {/* Thumbnails */}
             <div className='grid grid-cols-4 gap-4 mt-4'>
               {currentColorImages.map((image, index) => (
