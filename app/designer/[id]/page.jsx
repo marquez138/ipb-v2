@@ -286,7 +286,36 @@ const Product = () => {
             {/* Customization Controls */}
             {customOverlays[mainImage] && (
               <div className='mt-4 space-y-3'>
-                {/* ... size and rotation sliders ... */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700'>
+                    Size
+                  </label>
+                  <input
+                    type='range'
+                    min='50'
+                    max='400'
+                    value={customOverlays[mainImage].size}
+                    onChange={(e) =>
+                      handleControlChange('size', e.target.value)
+                    }
+                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700'>
+                    Rotation
+                  </label>
+                  <input
+                    type='range'
+                    min='0'
+                    max='360'
+                    value={customOverlays[mainImage].rotation}
+                    onChange={(e) =>
+                      handleControlChange('rotation', e.target.value)
+                    }
+                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'
+                  />
+                </div>
               </div>
             )}
             <input
