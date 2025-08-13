@@ -10,7 +10,6 @@ import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
 import React from 'react'
 import toast from 'react-hot-toast'
-import SvgView from '@/components/SvgView'
 
 // Define the available sizes
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
@@ -129,31 +128,6 @@ const Product = () => {
     setCustomOverlays(newOverlays)
   }
 
-  // --- [PRINT AREA CLAMP HELPERS] ---
-  function getPrintBoundsPx() {
-    const svg = svgRef.current
-    if (!svg || !mainImageContainerRef?.current) return null
-    const r = mainImageContainerRef.current.getBoundingClientRect()
-    const vb = svg.viewBox?.baseVal
-    if (!vb) return null
-    const sx = r.width / vb.width
-    const sy = r.height / vb.height
-    const rect = svg.querySelector('#printArea > rect')
-    if (!rect) return null
-    const x = parseFloat(rect.getAttribute('x') || '0')
-    const y = parseFloat(rect.getAttribute('y') || '0')
-    const w = parseFloat(rect.getAttribute('width') || '0')
-    const h = parseFloat(rect.getAttribute('height') || '0')
-    return { x: x * sx, y: y * sy, w: w * sx, h: h * sy }
-  }
-  function clampToPrint(x, y, sizePx) {
-    const pb = getPrintBoundsPx()
-    if (!pb) return { x, y }
-    return {
-      x: Math.max(pb.x, Math.min(x, pb.x + pb.w - sizePx)),
-      y: Math.max(pb.y, Math.min(y, pb.y + pb.h - sizePx)),
-    }
-  }
   const handleMouseDown = (e) => {
     e.stopPropagation()
     setIsDragging(true)
@@ -267,39 +241,15 @@ const Product = () => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              onClick={handleDesignAreaClick}
             >
-              <SvgView
-                ref={svgRef}
-                view={selectedView}
-                colorHex={
-                  getColorHex ? getColorHex(selectedColor) : selectedColor
-                }
-                art={
-                  customOverlays[mainImage]
-                    ? {
-                        src: customOverlays[mainImage].src,
-                        xPx: customOverlays[mainImage].position.x,
-                        yPx: customOverlays[mainImage].position.y,
-                        sizePx: customOverlays[mainImage].size,
-                        rotation: customOverlays[mainImage].rotation,
-                      }
-                    : null
-                }
-                containerW={containerSize.w}
-                containerH={containerSize.h}
-                onArtMouseDown={handleMouseDown}
-                className='w-full h-auto'
-              />
-
-              {/* <NextImage
+              <NextImage
                 src={mainImage || assets.upload_area}
                 alt={productData.name || 'product image'}
                 className='w-full h-auto object-cover'
                 width={1280}
                 height={720}
                 key={mainImage} // Add key to force re-render on image change
-              /> */}
+              />
               {!customOverlays[mainImage] ? (
                 <div
                   className='absolute inset-0 m-auto w-3/4 h-3/4 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-400/10'
@@ -386,10 +336,7 @@ const Product = () => {
               {currentColorImages.map((image, index) => (
                 <div
                   key={index}
-                  onClick={() => {
-                    setMainImage(image)
-                    setSelectedView(viewFromUrl(image))
-                  }}
+                  onClick={() => setMainImage(image)}
                   className={`cursor-pointer rounded-lg overflow-hidden bg-gray-500/10 ${
                     mainImage === image ? 'ring-2 ring-orange-500' : ''
                   }`}
