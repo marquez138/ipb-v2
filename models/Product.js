@@ -13,13 +13,19 @@ const productSchema = new mongoose.Schema({
   },
   // --- NEW: Add the imagesByColor field ---
   // This allows storing an object where keys are colors and values are image URL arrays.
-  imagesByColor: {
-    type: Map,
-    of: [String],
-    required: true,
-  },
+  // imagesByColor: {
+  //   type: Map,
+  //   of: [String],
+  //   required: true,
+  // },
   // --- REMOVED (or comment out) the old image field ---
   // image: { type: Array, required: true },
+
+  // NEW: Add an svgContent field
+  svgContent: {
+    type: String,
+    required: true,
+  },
   date: { type: Number, required: true },
 })
 

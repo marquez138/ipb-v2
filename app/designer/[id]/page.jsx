@@ -10,6 +10,7 @@ import Loading from '@/components/Loading'
 import { useAppContext } from '@/context/AppContext'
 import React from 'react'
 import toast from 'react-hot-toast'
+import SVG from 'react-inlinesvg'
 
 // Define the available sizes
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
@@ -238,18 +239,14 @@ const Product = () => {
             <div
               ref={mainImageContainerRef}
               className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4'
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
             >
-              <NextImage
-                src={mainImage || assets.upload_area}
-                alt={productData.name || 'product image'}
-                className='w-full h-auto object-cover'
-                width={1280}
-                height={720}
-                key={mainImage} // Add key to force re-render on image change
-              />
+              {productData.svgContent && (
+                <SVG
+                  src={productData.svgContent}
+                  className='w-full h-auto'
+                  style={{ color: getColorHex(selectedColor) }}
+                />
+              )}
               {!customOverlays[mainImage] ? (
                 <div
                   className='absolute inset-0 m-auto w-3/4 h-3/4 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-400/10'

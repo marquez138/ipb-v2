@@ -20,6 +20,8 @@ const AddProduct = () => {
     imagesByColor: {},
   })
 
+  const [svgFile, setSvgFile] = useState(null)
+
   // 2. State to hold the currently selected color from the dropdown
   const [selectedColor, setSelectedColor] = useState('')
 
@@ -70,68 +72,106 @@ const AddProduct = () => {
     }
   }
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault()
+  //   const toastId = toast.loading('Uploading images and adding product...')
+
+  //   try {
+  //     // Step 1: Upload images directly to Cloudinary
+  //     const uploadedImagesByColor = {}
+  //     const uploadPromises = []
+
+  //     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  //     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
+  //     if (!cloudName || !uploadPreset) {
+  //       toast.error('Cloudinary configuration missing.', { id: toastId })
+  //       return
+  //     }
+
+  //     for (const color of productData.colors) {
+  //       productData.imagesByColor[color].forEach((file, index) => {
+  //         if (file) {
+  //           const formData = new FormData()
+  //           formData.append('file', file)
+  //           formData.append('upload_preset', uploadPreset)
+
+  //           const promise = axios
+  //             .post(
+  //               `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+  //               formData
+  //             )
+  //             .then((response) => {
+  //               if (!uploadedImagesByColor[color]) {
+  //                 uploadedImagesByColor[color] = []
+  //               }
+  //               uploadedImagesByColor[color][index] = response.data.secure_url
+  //             })
+  //           uploadPromises.push(promise)
+  //         }
+  //       })
+  //     }
+
+  //     await Promise.all(uploadPromises)
+
+  //     // Step 2: Send the product data (with Cloudinary URLs) to your backend
+  //     const payload = {
+  //       ...productData,
+  //       imagesByColor: uploadedImagesByColor,
+  //     }
+
+  //     const token = await getToken()
+  //     const { data } = await axios.post('/api/product/add', payload, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     })
+
+  //     if (data.success) {
+  //       toast.success('Product added successfully!', { id: toastId })
+  //       // Reset form...
+  //     } else {
+  //       toast.error(data.message, { id: toastId })
+  //     }
+  //   } catch (error) {
+  //     toast.error('An error occurred during upload.', { id: toastId })
+  //     console.error(error)
+  //   }
+  // }
+
+  const handleSvgFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setSvgFile(e.target.files[0])
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const toastId = toast.loading('Uploading images and adding product...')
+    const toastId = toast.loading('Adding product...')
 
     try {
-      // Step 1: Upload images directly to Cloudinary
-      const uploadedImagesByColor = {}
-      const uploadPromises = []
+      const reader = new FileReader()
+      reader.readAsText(svgFile)
+      reader.onload = async (event) => {
+        const svgContent = event.target.result
 
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+        const payload = {
+          ...productData,
+          svgContent: svgContent,
+        }
 
-      if (!cloudName || !uploadPreset) {
-        toast.error('Cloudinary configuration missing.', { id: toastId })
-        return
-      }
-
-      for (const color of productData.colors) {
-        productData.imagesByColor[color].forEach((file, index) => {
-          if (file) {
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('upload_preset', uploadPreset)
-
-            const promise = axios
-              .post(
-                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-                formData
-              )
-              .then((response) => {
-                if (!uploadedImagesByColor[color]) {
-                  uploadedImagesByColor[color] = []
-                }
-                uploadedImagesByColor[color][index] = response.data.secure_url
-              })
-            uploadPromises.push(promise)
-          }
+        const token = await getToken()
+        const { data } = await axios.post('/api/product/add', payload, {
+          headers: { Authorization: `Bearer ${token}` },
         })
-      }
 
-      await Promise.all(uploadPromises)
-
-      // Step 2: Send the product data (with Cloudinary URLs) to your backend
-      const payload = {
-        ...productData,
-        imagesByColor: uploadedImagesByColor,
-      }
-
-      const token = await getToken()
-      const { data } = await axios.post('/api/product/add', payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (data.success) {
-        toast.success('Product added successfully!', { id: toastId })
-        // Reset form...
-      } else {
-        toast.error(data.message, { id: toastId })
+        if (data.success) {
+          toast.success('Product added successfully!', { id: toastId })
+          // Reset form...
+        } else {
+          toast.error(data.message, { id: toastId })
+        }
       }
     } catch (error) {
-      toast.error('An error occurred during upload.', { id: toastId })
-      console.error(error)
+      toast.error('An error occurred.', { id: toastId })
     }
   }
 
@@ -140,6 +180,13 @@ const AddProduct = () => {
       <form onSubmit={handleSubmit} className='md:p-10 p-4 space-y-6 max-w-2xl'>
         {/* --- Product Info Fields --- */}
         <div className='flex flex-col gap-1'>
+          <label className='font-medium'>Product SVG</label>
+          <input
+            type='file'
+            accept='.svg'
+            onChange={handleSvgFileChange}
+            required
+          />
           <label className='font-medium'>Product Name</label>
           <input
             name='name'
