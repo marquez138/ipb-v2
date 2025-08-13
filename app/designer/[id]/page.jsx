@@ -1,7 +1,7 @@
-// marquez138/ipb-v2/ipb-v2-9987ff656459b9ee12e8bebfdd8aeb8e6a45a8db/app/designer/[id]/page.jsx
 'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { assets } from '@/assets/assets'
+import ProductCard from '@/components/ProductCard'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import NextImage from 'next/image'
@@ -11,8 +11,9 @@ import { useAppContext } from '@/context/AppContext'
 import React from 'react'
 import toast from 'react-hot-toast'
 
-// ... (keep SIZES, UploadIcon, getColorHex functions the same)
+// Define the available sizes
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+
 const UploadIcon = () => (
   <svg
     className='w-8 h-8 text-gray-400'
@@ -29,6 +30,7 @@ const UploadIcon = () => (
     />
   </svg>
 )
+
 const getColorHex = (colorName) => {
   const COLOR_MAP = {
     Black: '#000000',
@@ -47,7 +49,9 @@ const Product = () => {
   const [mainImage, setMainImage] = useState(null)
   const [productData, setProductData] = useState(null)
   const [selectedColor, setSelectedColor] = useState('')
-  const [selectedViewIndex, setSelectedViewIndex] = useState(0) // NEW: State for selected view
+
+  // This state now holds the images for the currently selected color
+  const [currentColorImages, setCurrentColorImages] = useState([])
 
   const [customOverlays, setCustomOverlays] = useState({})
   const fileInputRef = useRef(null)
@@ -56,24 +60,27 @@ const Product = () => {
   const mainImageContainerRef = useRef(null)
   const [quantitiesBySize, setQuantitiesBySize] = useState({})
 
-  const updateMainImage = useCallback((product, color, viewIndex) => {
-    if (product && product.imagesByColor && color && product.views) {
-      const imagesForColor = product.imagesByColor[color] || []
-      const newMainImage = imagesForColor[viewIndex] || null
-      setMainImage(newMainImage)
-    }
-  }, [])
-
+  // --- UPDATED: Simplified to use the new data structure directly ---
   const fetchProductData = useCallback(() => {
     const product = products.find((product) => product._id === id)
     if (product) {
       setProductData(product)
-      const initialColor = product.colors?.[0] || ''
-      setSelectedColor(initialColor)
-      setSelectedViewIndex(0) // Default to the first view
-      updateMainImage(product, initialColor, 0)
+
+      // Directly use the imagesByColor object from the product data
+      if (
+        product.colors &&
+        product.colors.length > 0 &&
+        product.imagesByColor
+      ) {
+        const initialColor = product.colors[0]
+        const initialImages = product.imagesByColor[initialColor] || []
+
+        setSelectedColor(initialColor)
+        setCurrentColorImages(initialImages)
+        setMainImage(initialImages[0] || null) // Set to the first view of the first color
+      }
     }
-  }, [id, products, updateMainImage])
+  }, [id, products])
 
   useEffect(() => {
     fetchProductData()
@@ -81,16 +88,11 @@ const Product = () => {
 
   const handleColorSelect = (color) => {
     setSelectedColor(color)
-    updateMainImage(productData, color, selectedViewIndex)
+    const newImages = productData.imagesByColor[color] || []
+    setCurrentColorImages(newImages)
+    setMainImage(newImages[0] || null) // Reset to the first view of the newly selected color
   }
 
-  // --- NEW: Handler for selecting a view ---
-  const handleViewSelect = (index) => {
-    setSelectedViewIndex(index)
-    updateMainImage(productData, selectedColor, index)
-  }
-
-  // ... (keep handleCustomImageChange, handleDesignAreaClick, handleDeleteOverlay, mouse handlers, handleControlChange, handleQuantityChange, and handleAddToCart the same)
   const handleCustomImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
@@ -114,6 +116,7 @@ const Product = () => {
     e.target.value = null
   }
 
+  // ...(The rest of your handler functions and JSX remain exactly the same)...
   const handleDesignAreaClick = () => {
     fileInputRef.current.click()
   }
@@ -215,6 +218,7 @@ const Product = () => {
         ? customizationsWithRatios
         : null
 
+    // Pass the array of items to the cart
     addToCart(productData._id, selectedColor, customizations, itemsToAdd)
 
     toast.success('Added to cart!')
@@ -223,13 +227,14 @@ const Product = () => {
     }
   }
 
+  // ... (rest of the component logic)
+
   return productData ? (
     <>
       <Navbar />
       <div className='px-6 md:px-16 lg:px-32 pt-14 space-y-10'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-16'>
           <div className='px-5 lg:px-16 xl:px-20'>
-            {/* Main Image and Customization Area */}
             <div
               ref={mainImageContainerRef}
               className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4'
@@ -243,7 +248,7 @@ const Product = () => {
                 className='w-full h-auto object-cover'
                 width={1280}
                 height={720}
-                key={mainImage}
+                key={mainImage} // Add key to force re-render on image change
               />
               {!customOverlays[mainImage] ? (
                 <div
@@ -283,7 +288,7 @@ const Product = () => {
                 </div>
               )}
             </div>
-            {/* Customization Controls */}
+
             {customOverlays[mainImage] && (
               <div className='mt-4 space-y-3'>
                 <div>
@@ -326,32 +331,29 @@ const Product = () => {
               accept='image/*'
             />
 
-            {/* --- NEW: View Selector --- */}
-            <div className='flex items-center justify-center gap-3 mt-4 p-2 bg-gray-100 rounded-lg'>
-              {productData.views.map((view, index) => (
-                <button
+            {/* --- This thumbnail section now correctly shows all views for the selected color --- */}
+            <div className='grid grid-cols-4 gap-4 mt-4'>
+              {currentColorImages.map((image, index) => (
+                <div
                   key={index}
-                  onClick={() => handleViewSelect(index)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-md transition ${
-                    selectedViewIndex === index
-                      ? 'bg-orange-100'
-                      : 'hover:bg-gray-200'
+                  onClick={() => setMainImage(image)}
+                  className={`cursor-pointer rounded-lg overflow-hidden bg-gray-500/10 ${
+                    mainImage === image ? 'ring-2 ring-orange-500' : ''
                   }`}
                 >
-                  <Image
-                    src={assets[view.assetName]}
-                    alt={view.name}
-                    className='w-12 h-12'
+                  <NextImage
+                    src={image}
+                    alt={`${selectedColor} view ${index + 1}`}
+                    className='w-full h-auto object-cover'
+                    width={1280}
+                    height={720}
                   />
-                  <span className='text-xs font-medium'>{view.name}</span>
-                </button>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Product Details Section */}
           <div className='flex flex-col'>
-            {/* ... product name, description, price, etc. (no changes) ... */}
             <h1 className='text-3xl font-medium text-gray-800/90 mb-4'>
               {productData.name}
             </h1>
@@ -364,7 +366,6 @@ const Product = () => {
             </p>
             <hr className='bg-gray-600 my-6' />
 
-            {/* Color Selector (no change) */}
             {productData.colors?.length > 0 && (
               <div className='mt-6'>
                 <p className='text-sm text-gray-700 mb-2'>Choose a Color:</p>
@@ -391,8 +392,7 @@ const Product = () => {
               </div>
             )}
             <hr className='bg-gray-600 my-6' />
-
-            {/* Quantity by Size Inputs (no change) */}
+            {/* --- NEW: Quantity by Size Inputs --- */}
             <div className='my-6'>
               <p className='font-medium text-gray-700 mb-2'>Quantity by Size</p>
               <div className='grid grid-cols-4 gap-3'>
@@ -420,7 +420,7 @@ const Product = () => {
               </div>
             </div>
 
-            {/* Add to Cart / Buy Now buttons (no change) */}
+            {/* ... Add to Cart / Buy Now buttons ... */}
             <div className='flex items-center mt-10 gap-4'>
               <button
                 onClick={() => handleAddToCart(false)}

@@ -1,14 +1,5 @@
 import mongoose from 'mongoose'
 
-// --- NEW: Define a sub-schema for product views ---
-const viewSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true }, // e.g., 'Front Side'
-    assetName: { type: String, required: true }, // e.g., 'tshirt_front'
-  },
-  { _id: false }
-)
-
 const productSchema = new mongoose.Schema({
   userId: { type: String, required: true, ref: 'user' },
   name: { type: String, required: true },
@@ -18,11 +9,6 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   colors: {
     type: [String],
-    required: true,
-  },
-  // --- NEW: Add the views field ---
-  views: {
-    type: [viewSchema],
     required: true,
   },
   // --- NEW: Add the imagesByColor field ---
