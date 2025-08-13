@@ -46,10 +46,6 @@ import product_details_page_apple_earphone_image2 from './product_details_page_a
 import product_details_page_apple_earphone_image3 from './product_details_page_apple_earphone_image3.png'
 import product_details_page_apple_earphone_image4 from './product_details_page_apple_earphone_image4.png'
 import product_details_page_apple_earphone_image5 from './product_details_page_apple_earphone_image5.png'
-// Added SVG imports for design templates
-import tshirt_front from './tshirt_front.svg'
-import tshirt_back from './tshirt_back.svg'
-import tshirt_sleeve from './tshirt_sleeve.svg'
 
 export const assets = {
   logo,
@@ -101,11 +97,6 @@ export const assets = {
   product_details_page_apple_earphone_image5,
   pp_image: '/assets/PP1.jpeg',
   checkmark,
-  designTemplates: {
-    tshirt_front,
-    tshirt_back,
-    tshirt_sleeve,
-  },
 }
 
 export const BagIcon = () => {
