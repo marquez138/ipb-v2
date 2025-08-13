@@ -295,13 +295,6 @@ const Product = () => {
               </button>
             </div>
 
-            <label
-              htmlFor='artUpload'
-              className='ml-2 px-3 py-1 rounded border bg-white hover:bg-gray-100 cursor-pointer'
-            >
-              Upload artwork
-            </label>
-
             <div
               ref={mainImageContainerRef}
               className='relative rounded-lg overflow-hidden bg-gray-500/10 mb-4'
@@ -344,18 +337,10 @@ const Product = () => {
 
             {/* Hidden file input for uploads */}
             <input
-              id='artUpload'
               type='file'
               ref={fileInputRef}
               onChange={handleCustomImageChange}
-              style={{
-                position: 'absolute',
-                width: 1,
-                height: 1,
-                opacity: 0,
-                left: -9999,
-                top: 'auto',
-              }}
+              style={{ display: 'none' }}
               accept='image/*'
             />
             {/* Thumbnails */}
